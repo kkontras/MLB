@@ -42,7 +42,7 @@ The core idea of our Multi-Loss Balanced (MLB) method is illustrated below, in c
 - (c) Proposed MLB Method: Our approach combines both strategies. It uses unimodal classifiers for accurate performance estimation and then uses these estimates to modulate the gradients for 
 
 <div align="center">
-  <img src="figs/Methods_MLB.png" alt="Method Figure" style="width: 60%;">
+  <img src="figs/Methods_MLB.png" alt="Method Figure" style="width: 80%;">
 </div>
 
 The total loss is composed of three key terms:
@@ -65,14 +65,19 @@ The total loss is composed of three key terms:
 
 Table results demonstrate that MLB balances modality contributions more effectively, leading to consistent improvements across diverse multimodal domains.
 
-![Table Results MLB](figs/Results_table_MLB.png) 
+<div align="center">
+  <img src="figs/Results_table_MLB.png" alt="Table Results MLB" style="width: 80%;">
+</div>
 
 ### Ablations
 
-![Ablations Results MLB](figs/Results_fusionece_MLB.png) 
+<div align="center">
+  <img src="figs/Results_fusionece_MLB.png" alt="Fusion Results MLB" style="width: 80%;">
+</div>
 
-![Ablations Results MLB](figs/Results_Ablations_MLB.png) 
-
+<div align="center">
+  <img src="figs/Results_Ablations_MLB.png" alt="Ablations Results MLB" style="width: 80%;">
+</div>
 
 ## Repository Structure
 ```text
