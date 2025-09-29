@@ -28,7 +28,15 @@
 
 ## TL;DR
 
-We introduce MLB ..
+
+Multimodal models often let one modality dominate training, hurting overall performance.  
+We propose **Multi-Loss Gradient Modulation (MLB)**: a method that combines unimodal losses with adaptive gradient balancing.  
+Unlike prior work, MLB can both **accelerate and decelerate** modality learning, and naturally phases out balancing at convergence.  
+
+- Consistently outperforms state-of-the-art balancing methods across **audio-video (CREMA-D, AVE, UCF)** and **video-optical flow (Something-Something)** datasets  
+- Works with **different backbones** (ResNet, Conformer) and **fusion strategies** (Late, Mid, FiLM, Gated, Transformer)  
+- Improves **accuracy**, and **calibration**
+
 ---
 
 ##Method
@@ -71,9 +79,13 @@ Table results demonstrate that MLB balances modality contributions more effectiv
 
 ### Ablations
 
+#### Fusion Methods & ECE
+
 <div align="center">
   <img src="figs/Results_fusionece_MLB.png" alt="Fusion Results MLB" style="width: 80%;">
 </div>
+
+#### Gradient Formulation Methods 
 
 <div align="center">
   <img src="figs/Results_Ablations_MLB.png" alt="Ablations Results MLB" style="width: 80%;">
@@ -86,14 +98,13 @@ MLB/
 │   └── helpers/        # Evaluator, Loader, Trainer, Validator 
 │── configs/            # Configuration files for each experiment + default configs
 │── datasets/           # Datasets' loaders
-│── experiments/        # Preprocessed trial data
 │── figs/               # Figures & sample outputs
 │── models/             # Model architectures
 │── posthoc/            # Post-hoc Testing & Evaluation scripts
 │── utils/              # Utility scripts
-│── run.sh              # Shell script to launch training/testing (full or noisy)
+│── run.sh              # Shell script to launch training/testing
 │── train.py            # Training entry point
-│── train.py            # Training entry point
+│── show.py             # Showcasing trained models
 │── requirements.txt    # Dependencies
 └── README.md           # You are here
 ```
