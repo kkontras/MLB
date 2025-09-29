@@ -41,8 +41,7 @@ The core idea of our Multi-Loss Balanced (MLB) method is illustrated below, in c
 
 - (c) Proposed MLB Method: Our approach combines both strategies. It uses unimodal classifiers for accurate performance estimation and then uses these estimates to modulate the gradients for 
 
-![Method Figure](figs/Method_MLB.png) 
-
+<img src="figs/Methods_MLB.png" alt="Method Figure" width="400"/>
 
 The total loss is composed of three key terms:
 ```math
