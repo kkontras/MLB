@@ -13,7 +13,6 @@
 <div align="center">
   <strong>
     <a href="https://kkontras.github.io/">Konstantinos Kontras</a><sup>1</sup>,
-    <a href="https://www.kuleuven.be/wieiswie/nl/person/00114748">Thomas Strypsteen</a><sup>1</sup>,
     <a href="https://www.kuleuven.be/wieiswie/nl/person/00126237">Christos Chatzichristos</a><sup>1</sup>,
     <a href="https://homes.esat.kuleuven.be/~mblaschk/">Matthew Blaschko</a><sup>1</sup>,
     <a href="https://www.kuleuven.be/wieiswie/nl/person/00050294">Maarten De Vos</a><sup>1,2</sup>
