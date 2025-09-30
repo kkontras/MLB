@@ -38,7 +38,7 @@ Unlike prior work, MLB can both **accelerate and decelerate** modality learning,
 
 ---
 
-##Method
+## Method
 
 The core idea of our Multi-Loss Balanced (MLB) method is illustrated below, in contrast with previous approaches:
 
@@ -55,16 +55,16 @@ The core idea of our Multi-Loss Balanced (MLB) method is illustrated below, in c
 The balancing coefficients are estimated as follows:
 ```math
 \begin{align}
-    s_i &= \sum_{j=1}^N \sum_{c=1}^Cf_i(X^j_i;\theta_{i})1_{k=y_{c}^j}, \label{eq:si}\\ % \vspace{1mm}
-    r_i &= \frac{\frac{1}{M-1}\sum_{m=1, m\neq i}^Ms_m}{s_i}, \label{eq:ri}\\% \vspace{1mm}
+    s_i &= \sum_{j=1}^N \sum_{c=1}^Cf_i(X^j_i;\theta_{i})1_{k=y_{c}^j},\\ % \vspace{1mm}
+    r_i &= \frac{\frac{1}{M-1}\sum_{m=1, m\neq i}^Ms_m}{s_i}, \\% \vspace{1mm}
     \beta_i &= \begin{cases} 
     \begin{aligned}
 & \beta_{\mathrm{max}} \quad \text{if } r_i > 1,\\
 & 2 \quad \text{otherwise},
 \end{aligned}
 \end{cases} \\% \vspace{1mm}
-    k_i &= 1 + (\beta_i-1) \cdot \tanh(\alpha \cdot (r_i - 1)), \label{eq:ki}
-    % k_i &= 1+\tanh(\alpha \cdot (r_i -1)), \label{eq:ki_norm}
+    k_i &= 1 + (\beta_i-1) \cdot \tanh(\alpha \cdot (r_i - 1)), 
+    % k_i &= 1+\tanh(\alpha \cdot (r_i -1))
 \end{align}
 ```
 
