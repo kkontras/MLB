@@ -13,19 +13,20 @@ from models.SthSth_models import *
 
 import logging
 
-TORCHDYNAMO_VERBOSE=1
+TORCHDYNAMO_VERBOSE = 1
 TORCH_LOGS = "+dynamo"
 
 torch._dynamo.config.suppress_errors = True
-torch._dynamo.config.verbose=False
+torch._dynamo.config.verbose = False
 
-logger = logging.getLogger('torch._dynamo.symbolic_convert:')
+logger = logging.getLogger("torch._dynamo.symbolic_convert:")
 logger.setLevel(logging.WARNING)
 
-logger = logging.getLogger('torch._dynamo.output_graph:')
+logger = logging.getLogger("torch._dynamo.output_graph:")
 logger.setLevel(logging.WARNING)
 
-class Loader():
+
+class Loader:
 
     def __init__(self, agent):
         self.agent = agent
@@ -41,7 +42,7 @@ class Loader():
 
     def _freeze_encoders(self, config_model, model):
         for enc in range(len(config_model.get("encoders", []))):
-            enc_args = config_model.encoders[enc].get("args",{})
+            enc_args = config_model.encoders[enc].get("args", {})
             if enc_args.get("freeze_encoder", False):
                 if hasattr(model, "enc_{}".format(enc)):
                     self.agent.logger.info("Freezing encoder enc_{}".format(enc))
@@ -53,7 +54,7 @@ class Loader():
 
             if "encoders" in config_model.encoders[enc]:
                 for enc_i in range(len(config_model.encoders)):
-                    self._freeze_encoders(config_model = config_model.encoders[enc_i], model = getattr(model, "enc_{}".format(enc_i)))
+                    self._freeze_encoders(config_model=config_model.encoders[enc_i], model=getattr(model, "enc_{}".format(enc_i)))
 
     def keep_only_trainable_params(self, list_of_params):
         params = []
@@ -77,10 +78,12 @@ class Loader():
             self.agent.config.model.args.swin_backbone = os.path.join(self.agent.config.model.save_base_dir, self.agent.config.model.args.swin_backbone)
 
         if "save_base_dir" in self.agent.config.model and "pretraining_paths" in self.agent.config.model.args:
-            self.agent.config.model.args.pretraining_paths = {i: os.path.join(self.agent.config.model.save_base_dir, self.agent.config.model.args.pretraining_paths[i]) for i in self.agent.config.model.args.pretraining_paths}
+            self.agent.config.model.args.pretraining_paths = {
+                i: os.path.join(self.agent.config.model.save_base_dir, self.agent.config.model.args.pretraining_paths[i])
+                for i in self.agent.config.model.args.pretraining_paths
+            }
 
-
-        self.agent.model = model_class(encs = enc, args = self.agent.config.model.args)
+        self.agent.model = model_class(encs=enc, args=self.agent.config.model.args)
         self._freeze_encoders(config_model=self.agent.config.model, model=self.agent.model)
         self.agent.model.cuda()
 
@@ -96,34 +99,46 @@ class Loader():
                 list_of_params = []
                 for i, key in enumerate(ind_opt):
                     if hasattr(self.agent.model, key):
-                        this_param_names = ["{}.{}".format(key,name) for name, _ in getattr(self.agent.model, key).named_parameters()]
+                        this_param_names = ["{}.{}".format(key, name) for name, _ in getattr(self.agent.model, key).named_parameters()]
                         all_param_names = [name for name in all_param_names if name not in this_param_names]
-                        list_of_params.append({'params':getattr(self.agent.model, key).parameters(), "lr": ind_opt[key]["learning_rate"], "weight_decay": ind_opt[key]["weight_decay"]})
-                list_of_params.append({'params': [p for n_i in all_param_names for name, p in self.agent.model.named_parameters() if name == n_i], "lr": self.agent.config.optimizer.learning_rate, "weight_decay": self.agent.config.optimizer.weight_decay})
+                        list_of_params.append(
+                            {"params": getattr(self.agent.model, key).parameters(), "lr": ind_opt[key]["learning_rate"], "weight_decay": ind_opt[key]["weight_decay"]}
+                        )
+                list_of_params.append(
+                    {
+                        "params": [p for n_i in all_param_names for name, p in self.agent.model.named_parameters() if name == n_i],
+                        "lr": self.agent.config.optimizer.learning_rate,
+                        "weight_decay": self.agent.config.optimizer.weight_decay,
+                    }
+                )
                 list_of_params = self.keep_only_trainable_params(list_of_params)
-                self.agent.optimizer = optim.Adam(list_of_params,
-                                                  lr=self.agent.config.optimizer.learning_rate,
-                                                  betas=(self.agent.config.optimizer.beta1, self.agent.config.optimizer.beta2),
-                                                  eps=1e-07,
-                                                  weight_decay=self.agent.config.optimizer.weight_decay)
+                self.agent.optimizer = optim.Adam(
+                    list_of_params,
+                    lr=self.agent.config.optimizer.learning_rate,
+                    betas=(self.agent.config.optimizer.beta1, self.agent.config.optimizer.beta2),
+                    eps=1e-07,
+                    weight_decay=self.agent.config.optimizer.weight_decay,
+                )
             else:
                 list_of_params = self.keep_only_trainable_params(self.agent.model.parameters())
-                self.agent.optimizer = optim.Adam(list_of_params,
-                                                  lr=self.agent.config.optimizer.learning_rate,
-                                                  betas=(self.agent.config.optimizer.beta1, self.agent.config.optimizer.beta2),
-                                                  eps=1e-07,
-                                                  weight_decay=self.agent.config.optimizer.weight_decay)
+                self.agent.optimizer = optim.Adam(
+                    list_of_params,
+                    lr=self.agent.config.optimizer.learning_rate,
+                    betas=(self.agent.config.optimizer.beta1, self.agent.config.optimizer.beta2),
+                    eps=1e-07,
+                    weight_decay=self.agent.config.optimizer.weight_decay,
+                )
         elif self.agent.config.optimizer.type == "SGD":
-            self.agent.optimizer = optim.SGD(self.agent.model.parameters(),
-                                    lr=self.agent.config.optimizer.learning_rate,
-                                    weight_decay=self.agent.config.optimizer.weight_decay,
-                                    momentum=self.agent.config.optimizer.momentum)
+            self.agent.optimizer = optim.SGD(
+                self.agent.model.parameters(),
+                lr=self.agent.config.optimizer.learning_rate,
+                weight_decay=self.agent.config.optimizer.weight_decay,
+                momentum=self.agent.config.optimizer.momentum,
+            )
         elif self.agent.config.optimizer.type == "Adadelta":
-            self.agent.optimizer = optim.Adadelta(self.agent.model.parameters(),
-                                            lr=self.agent.config.optimizer.learning_rate,
-                                            rho=0.9,
-                                            eps=1e-06,
-                                            weight_decay=self.agent.config.optimizer.weight_decay)
+            self.agent.optimizer = optim.Adadelta(
+                self.agent.model.parameters(), lr=self.agent.config.optimizer.learning_rate, rho=0.9, eps=1e-06, weight_decay=self.agent.config.optimizer.weight_decay
+            )
         elif self.agent.config.optimizer.type == "Adaw":
             ind_opt = self.agent.config.optimizer.get("indepentent_params", False)
             if ind_opt is not False:
@@ -131,23 +146,28 @@ class Loader():
                 for i, key in enumerate(ind_opt):
                     name = "mod{}_{}_model".format(i, key)
                     if hasattr(self.agent.model, name):
-                        list_of_params.append({'params':getattr(self.agent.model, name).parameters(), "lr": ind_opt[key]["learning_rate"], "weight_decay": ind_opt[key]["weight_decay"]})
+                        list_of_params.append(
+                            {"params": getattr(self.agent.model, name).parameters(), "lr": ind_opt[key]["learning_rate"], "weight_decay": ind_opt[key]["weight_decay"]}
+                        )
                 if hasattr(self.agent.model, "classifier"):
-                    list_of_params.append({'params':self.agent.model.classifier.parameters(), "lr": self.agent.config.optimizer.learning_rate, "weight_decay": self.agent.config.optimizer.weight_decay})
-                self.agent.optimizer = optim.AdamW(list_of_params,
-                                            lr=self.agent.config.optimizer.learning_rate,
-                                            weight_decay=self.agent.config.optimizer.weight_decay)
+                    list_of_params.append(
+                        {
+                            "params": self.agent.model.classifier.parameters(),
+                            "lr": self.agent.config.optimizer.learning_rate,
+                            "weight_decay": self.agent.config.optimizer.weight_decay,
+                        }
+                    )
+                self.agent.optimizer = optim.AdamW(list_of_params, lr=self.agent.config.optimizer.learning_rate, weight_decay=self.agent.config.optimizer.weight_decay)
             else:
-                self.agent.optimizer = optim.AdamW(self.agent.model.parameters(),
-                                            lr=self.agent.config.optimizer.learning_rate,
-                                            weight_decay=self.agent.config.optimizer.weight_decay)
+                self.agent.optimizer = optim.AdamW(
+                    self.agent.model.parameters(), lr=self.agent.config.optimizer.learning_rate, weight_decay=self.agent.config.optimizer.weight_decay
+                )
         self.load_pretrained_models()
 
     def load_best_model(self):
 
         file_name = self.agent.config.model.save_dir
-        if "data_split" in self.agent.config.dataset and self.agent.config.dataset.data_split.get("split_method",
-                                                                                                  False) == "patients_folds":
+        if "data_split" in self.agent.config.dataset and self.agent.config.dataset.data_split.get("split_method", False) == "patients_folds":
             file_name = file_name.format(self.agent.config.dataset.data_split.fold)
 
         if "save_base_dir" in self.agent.config.model:
@@ -156,8 +176,7 @@ class Loader():
         if os.path.exists(file_name):
             prev_checkpoint = torch.load(file_name, map_location="cpu", weights_only=False)
             if "best_model_state_dict" in prev_checkpoint:
-                prev_checkpoint["best_model_state_dict"] = {key.replace("module.", ""): value for key, value in
-                                                       prev_checkpoint["best_model_state_dict"].items()}
+                prev_checkpoint["best_model_state_dict"] = {key.replace("module.", ""): value for key, value in prev_checkpoint["best_model_state_dict"].items()}
 
                 self.agent.model.load_state_dict(prev_checkpoint["best_model_state_dict"])
                 logging.info("Loaded best model from {}".format(file_name))
@@ -166,13 +185,13 @@ class Loader():
         else:
             logging.info("No file found in {}".format(file_name))
 
-    def _my_numel(self, m: torch.nn.Module, only_trainable: bool = False, verbose = True):
+    def _my_numel(self, m: torch.nn.Module, only_trainable: bool = False, verbose=True):
 
         parameters = list(m.parameters())
         if only_trainable:
             parameters = [p for p in parameters if p.requires_grad]
         unique = {p.data_ptr(): p for p in parameters}.values()
-        model_total_params =  sum(p.numel() for p in unique)
+        model_total_params = sum(p.numel() for p in unique)
         if verbose and self.agent.accelerator.is_main_process:
             self.agent.logger.info("Total number of trainable parameters are: {}".format(model_total_params))
 
@@ -180,45 +199,58 @@ class Loader():
 
     def get_scheduler(self):
         if self.agent.config.scheduler.type == "cyclic":
-            after_scheduler = optim.lr_scheduler.CyclicLR(self.agent.optimizer, base_lr=self.agent.config.optimizer.learning_rate, max_lr=self.agent.config.scheduler.max_lr, cycle_momentum=False)
+            after_scheduler = optim.lr_scheduler.CyclicLR(
+                self.agent.optimizer, base_lr=self.agent.config.optimizer.learning_rate, max_lr=self.agent.config.scheduler.max_lr, cycle_momentum=False
+            )
 
-            self.agent.scheduler = WarmupScheduler(optimizer=self.agent.optimizer,
-                                                   base_lr=self.agent.config.optimizer.learning_rate,
-                                                   n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
-                                                   after_scheduler=after_scheduler)
+            self.agent.scheduler = WarmupScheduler(
+                optimizer=self.agent.optimizer,
+                base_lr=self.agent.config.optimizer.learning_rate,
+                n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
+                after_scheduler=after_scheduler,
+            )
 
         elif self.agent.config.scheduler.type == "cosanneal":
 
             after_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=self.agent.optimizer, T_0=4, T_mult=2)
-            self.agent.scheduler = WarmupScheduler(optimizer=self.agent.optimizer,
-                                                   base_lr=self.agent.config.optimizer.learning_rate,
-                                                   n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
-                                                   after_scheduler=after_scheduler)
+            self.agent.scheduler = WarmupScheduler(
+                optimizer=self.agent.optimizer,
+                base_lr=self.agent.config.optimizer.learning_rate,
+                n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
+                after_scheduler=after_scheduler,
+            )
 
         elif self.agent.config.scheduler.type == "reducerlonplatau":
 
-            after_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=self.agent.optimizer,
-                                                                   mode='min',
-                                                                   factor=self.agent.config.scheduler.factor,
-                                                                   patience=self.agent.config.scheduler.patience,
-                                                                   verbose=True
-                                                                   )
-            self.agent.scheduler = WarmupScheduler(optimizer=self.agent.optimizer,
-                                                   base_lr=self.agent.config.optimizer.learning_rate,
-                                                   n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
-                                                   after_scheduler=after_scheduler)
+            after_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer=self.agent.optimizer, mode="min", factor=self.agent.config.scheduler.factor, patience=self.agent.config.scheduler.patience, verbose=True
+            )
+            self.agent.scheduler = WarmupScheduler(
+                optimizer=self.agent.optimizer,
+                base_lr=self.agent.config.optimizer.learning_rate,
+                n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
+                after_scheduler=after_scheduler,
+            )
         elif self.agent.config.scheduler.type == "stepLR":
-            after_scheduler = optim.lr_scheduler.StepLR(optimizer=self.agent.optimizer, step_size=self.agent.config.scheduler.lr_decay_step, gamma=self.agent.config.scheduler.lr_decay_ratio)
-            self.agent.scheduler = WarmupScheduler(optimizer=self.agent.optimizer,
-                                                   base_lr=self.agent.config.optimizer.learning_rate,
-                                                   n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
-                                                   after_scheduler=after_scheduler)
+            after_scheduler = optim.lr_scheduler.StepLR(
+                optimizer=self.agent.optimizer, step_size=self.agent.config.scheduler.lr_decay_step, gamma=self.agent.config.scheduler.lr_decay_ratio
+            )
+            self.agent.scheduler = WarmupScheduler(
+                optimizer=self.agent.optimizer,
+                base_lr=self.agent.config.optimizer.learning_rate,
+                n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
+                after_scheduler=after_scheduler,
+            )
         elif self.agent.config.scheduler.type == "MultistepLR":
-            after_scheduler = optim.lr_scheduler.MultiStepLR(optimizer=self.agent.optimizer, milestones=self.agent.config.scheduler.milestones, gamma=self.agent.config.scheduler.lr_decay_ratio)
-            self.agent.scheduler = WarmupScheduler(optimizer=self.agent.optimizer,
-                                                   base_lr=self.agent.config.optimizer.learning_rate,
-                                                   n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
-                                                   after_scheduler=after_scheduler)
+            after_scheduler = optim.lr_scheduler.MultiStepLR(
+                optimizer=self.agent.optimizer, milestones=self.agent.config.scheduler.milestones, gamma=self.agent.config.scheduler.lr_decay_ratio
+            )
+            self.agent.scheduler = WarmupScheduler(
+                optimizer=self.agent.optimizer,
+                base_lr=self.agent.config.optimizer.learning_rate,
+                n_warmup_steps=self.agent.config.scheduler.warm_up_steps,
+                after_scheduler=after_scheduler,
+            )
 
         else:
             self.agent.scheduler = No_Scheduler(base_lr=self.agent.config.optimizer.learning_rate)
@@ -238,15 +270,13 @@ class Loader():
         if self.agent.accelerator.is_main_process:
             self.agent.logger.info("Loading checkpoint: {}".format(file_name))
 
-        checkpoint["model_state_dict"] = {key.replace("module.", ""): value for key, value in
-                                               checkpoint["model_state_dict"].items()}
-
+        checkpoint["model_state_dict"] = {key.replace("module.", ""): value for key, value in checkpoint["model_state_dict"].items()}
 
         self.agent.model.load_state_dict(checkpoint["model_state_dict"])
         # self.agent.best_model.load_state_dict(checkpoint["best_model_state_dict"])
         self.agent.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         if "scheduler_state_dict" in checkpoint:
-            self.agent.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            self.agent.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
 
         if "training_dataloder_generator_state" in checkpoint:
             self.agent.data_loader.train_loader.generator.set_state(checkpoint["training_dataloder_generator_state"])
@@ -262,30 +292,32 @@ class Loader():
             self.agent.logger.info("Loaded loss weights are:", self.agent.weights)
 
         for step in self.agent.logs["train_logs"]:
-            wandb.log({"train": self.agent.logs["train_logs"][step], "val":  self.agent.logs["val_logs"][step]}, step=step)
+            wandb.log({"train": self.agent.logs["train_logs"][step], "val": self.agent.logs["val_logs"][step]}, step=step)
             for i, lr in enumerate(self.agent.logs["train_logs"][step]["learning_rate"]):
-                wandb.log({"lr": lr, "val":  self.agent.logs["val_logs"][step]}, step=i+ step - self.agent.config.early_stopping.validate_every)
+                wandb.log({"lr": lr, "val": self.agent.logs["val_logs"][step]}, step=i + step - self.agent.config.early_stopping.validate_every)
 
         self.agent.loss = nn.CrossEntropyLoss()
 
         message = ""
         if "step" in self.agent.logs["best_logs"]:
-            message += Fore.WHITE + "The best in step: {} so far \n".format(
-                int(self.agent.logs["best_logs"]["step"] / self.agent.config.early_stopping.validate_every))
+            message += Fore.WHITE + "The best in step: {} so far \n".format(int(self.agent.logs["best_logs"]["step"] / self.agent.config.early_stopping.validate_every))
 
             if "loss" in self.agent.logs["best_logs"]:
-                for i, v in self.agent.logs["best_logs"]["loss"].items(): message += Fore.RED + "{} : {:.6f} ".format(i,v)
+                for i, v in self.agent.logs["best_logs"]["loss"].items():
+                    message += Fore.RED + "{} : {:.6f} ".format(i, v)
             if "acc" in self.agent.logs["best_logs"]:
-                for i, v in self.agent.logs["best_logs"]["acc"].items(): message += Fore.LIGHTBLUE_EX + "Acc_{}: {:.2f} ".format(i, v * 100)
+                for i, v in self.agent.logs["best_logs"]["acc"].items():
+                    message += Fore.LIGHTBLUE_EX + "Acc_{}: {:.2f} ".format(i, v * 100)
             if "f1" in self.agent.logs["best_logs"]:
-                for i, v in self.agent.logs["best_logs"]["f1"].items(): message += Fore.LIGHTGREEN_EX + "F1_{}: {:.2f} ".format(i, v * 100)
+                for i, v in self.agent.logs["best_logs"]["f1"].items():
+                    message += Fore.LIGHTGREEN_EX + "F1_{}: {:.2f} ".format(i, v * 100)
             if "k" in self.agent.logs["best_logs"]:
-                for i, v in self.agent.logs["best_logs"]["k"].items(): message += Fore.LIGHTGREEN_EX + "K_{}: {:.4f} ".format(i, v)
+                for i, v in self.agent.logs["best_logs"]["k"].items():
+                    message += Fore.LIGHTGREEN_EX + "K_{}: {:.4f} ".format(i, v)
 
         if self.agent.accelerator.is_main_process:
             self.agent.logger.info("Checkpoint loaded successfully")
             self.agent.logger.info(message)
-
 
     def load_encoder(self, enc_args):
         encs = []
@@ -295,19 +327,19 @@ class Loader():
 
             if "encoders" in enc_args[num_enc]:
                 enc_enc = self.load_encoder(enc_args[num_enc]["encoders"])
-                enc = enc_class(encs = enc_enc, args = args)
+                enc = enc_class(encs=enc_enc, args=args)
             else:
-                enc = enc_class(args = args, encs=[])
+                enc = enc_class(args=args, encs=[])
 
-            pretrained_encoder_args =  enc_args[num_enc].get("pretrainedEncoder", {"use":False})
+            pretrained_encoder_args = enc_args[num_enc].get("pretrainedEncoder", {"use": False})
             if pretrained_encoder_args["use"]:
 
-                file_path = pretrained_encoder_args.get("dir","")
+                file_path = pretrained_encoder_args.get("dir", "")
                 if "save_base_dir" in self.agent.config.model:
                     file_path = os.path.join(self.agent.config.model.save_base_dir, file_path)
                 checkpoint = torch.load(file_path, weights_only=False)
                 if "encoder_state_dict" in checkpoint:
-                    missing_keys, unexpected_keys =  enc.load_state_dict(checkpoint["encoder_state_dict"], strict=False)
+                    missing_keys, unexpected_keys = enc.load_state_dict(checkpoint["encoder_state_dict"], strict=False)
                     if missing_keys:
                         print(f"Missing keys in state_dict: {missing_keys}")
                     if unexpected_keys:
@@ -318,7 +350,7 @@ class Loader():
                     if "VaVL" not in enc_args[num_enc]["model"]:
                         print("Replacing module")
                         checkpoint["best_model_state_dict"] = {key.replace("module.", ""): value for key, value in checkpoint["best_model_state_dict"].items()}
-                    missing_keys, unexpected_keys =  enc.load_state_dict(checkpoint["best_model_state_dict"], strict=False)
+                    missing_keys, unexpected_keys = enc.load_state_dict(checkpoint["best_model_state_dict"], strict=False)
                     if missing_keys:
                         print(f"Missing keys in state_dict: {missing_keys}")
                     if unexpected_keys:

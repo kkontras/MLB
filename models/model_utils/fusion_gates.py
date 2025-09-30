@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class FiLM(nn.Module):
     """
     FiLM: Visual Reasoning with a General Conditioning Layer,
@@ -45,6 +46,7 @@ class FiLM(nn.Module):
         output = self.fc_out(output)
 
         return output
+
 
 class GatedFusion(nn.Module):
     """

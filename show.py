@@ -9,6 +9,7 @@ import logging
 from posthoc.Helpers.Helper_Importer import Importer
 import numpy as np
 
+
 def print_search(config_path, default_config_path, args):
     setup_logger()
 
@@ -103,8 +104,8 @@ def print_search(config_path, default_config_path, args):
 
     importer.config.model.save_dir = importer.config.model.save_dir.format(m)
 
-    #Just to transfer the models
-    # dst = "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/CREMAD_models/MCR_models"
+    # Just to transfer the models
+    # dst = "project_default_dir/data/2023_data/CREMAD_models/MCR_models"
     # dst = os.path.join(dst,importer.config.model.save_dir)
     # import shutil
     # if "save_base_dir" in importer.config.model:
@@ -126,10 +127,7 @@ def print_search(config_path, default_config_path, args):
         return 0, 0
 
     # print(importer.checkpoint["configs"])
-    val_metrics, test_metric = importer.print_progress(multi_fold_results={},
-                                                 verbose=False,
-                                                 latex_version=False)
-
+    val_metrics, test_metric = importer.print_progress(multi_fold_results={}, verbose=False, latex_version=False)
 
     message = Fore.WHITE + "{}  ".format(importer.config.model.save_dir.split("/")[-1])
     # val_metrics = multi_fold_results[0]
@@ -143,7 +141,8 @@ def print_search(config_path, default_config_path, args):
     if "steps_no_improve" in val_metrics:
         message += Fore.GREEN + "Steps no improve: {}  ".format(val_metrics["steps_no_improve"])
     if "loss" in val_metrics:
-        for i, v in val_metrics["loss"].items(): message += Fore.RED + "{} : {:.6f} ".format(i, v)
+        for i, v in val_metrics["loss"].items():
+            message += Fore.RED + "{} : {:.6f} ".format(i, v)
     if "acc" in val_metrics:
         for i, v in val_metrics["acc"].items():
             if i == "combined":
@@ -152,7 +151,7 @@ def print_search(config_path, default_config_path, args):
     if test_metric and "acc" in test_metric:
         for i, v in test_metric["acc"].items():
             # if i == "combined":
-                message += Fore.MAGENTA + "Test_Acc_{}: {:.1f} ".format(i, v * 100)
+            message += Fore.MAGENTA + "Test_Acc_{}: {:.1f} ".format(i, v * 100)
     # if "ceu" in val_metrics:
     #     for i, v in val_metrics["ceu"]["combined"].items(): message += Fore.LIGHTGREEN_EX + "CEU_{}: {:.2f} ".format(i, v)
 
@@ -180,7 +179,10 @@ def print_search(config_path, default_config_path, args):
         print(message + Fore.RESET)
     return val_metrics, test_metric
 
+
 from collections import defaultdict
+
+
 def print_mean(m: dict, val=True):
     agg = {}
     counts = defaultdict(int)  # Keep track of counts for non-dict metrics
@@ -195,7 +197,7 @@ def print_mean(m: dict, val=True):
                     continue
                 for pred in m[fold][metric]:
                     # if pred == "combined":
-                        agg[metric][pred].append(m[fold][metric][pred])
+                    agg[metric][pred].append(m[fold][metric][pred])
             else:
                 if metric not in agg:
                     agg[metric] = []
@@ -259,55 +261,55 @@ def print_mean(m: dict, val=True):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="My Command Line Program")
-    parser.add_argument('--config', help="Number of config file")
-    parser.add_argument('--default_config', help="Number of config file")
-    parser.add_argument('--fold', help="Fold")
-    parser.add_argument('--alpha', help="Alpha")
-    parser.add_argument('--validate_with', help="validate_with")
-    parser.add_argument('--transform_type', help="transform_type")
-    parser.add_argument('--trasform_before', help="trasform_before")
-    parser.add_argument('--tanh_mode', help="tanh_mode")
-    parser.add_argument('--tanh_mode_beta', help="tanh_mode_beta")
-    parser.add_argument('--reg_by', help="reg_by")
-    parser.add_argument('--clip', help="Gradient Clip Value")
-    parser.add_argument('--batch_size', help="batch_size")
-    parser.add_argument('--l', help="L for Gat")
-    parser.add_argument('--multil', help="Coeff of Multi-Loss")
-    parser.add_argument('--l_diffsq', help="L for Gat")
-    parser.add_argument('--lib', help="L for Gat")
-    parser.add_argument('--ratio_us', help="lib for Gat")
-    parser.add_argument('--kmepoch', help="keep memory epoch")
-    parser.add_argument('--num_samples', help="Number of samples for Gat")
-    parser.add_argument('--pow', help="ShuffleGrad power")
-    parser.add_argument('--nstep', help="ShuffleGrad nstep Reg-Dist-Sep")
-    parser.add_argument('--contr_coeff', help="ShuffleGrad Contrastive Coefficient")
-    parser.add_argument('--kde_coeff', help="ShuffleGrad kde_coeff Coefficient")
-    parser.add_argument('--etube', help="ShuffleGrad Etube")
-    parser.add_argument('--temperature', help="ShuffleGrad Contrastive Temperature")
-    parser.add_argument('--contr_type', help="ShuffleGrad Contrastive type")
-    parser.add_argument('--shuffle_type', help="shuffle_type")
-    parser.add_argument('--num_classes', help="num_classes")
-    parser.add_argument('--base_alpha', help="Synthetic Alpha")
-    parser.add_argument('--alpha_var', help="Synthetic Alpha Variance")
-    parser.add_argument('--base_beta', help="Synthetic Beta")
-    parser.add_argument('--beta_var', help="Synthetic Beta Variance")
-    parser.add_argument('--optim_method', help="Optim for Gat")
-    parser.add_argument('--ilr_c', help="Initial Learning Rate Audio")
-    parser.add_argument('--ilr_g', help="Initial Learning Rate Video")
-    parser.add_argument('--mmcosine_scaling', help="mmcosine_scaling")
-    parser.add_argument('--ending_epoch', help="Ending epoch")
-    parser.add_argument('--load_ongoing', help="Ending epoch")
-    parser.add_argument('--commonlayers', help="Fusion with Conformer Layers")
-    parser.add_argument('--recon_weight1', help="ReconBoost Parameters")
-    parser.add_argument('--recon_weight2', help="ReconBoost Parameters")
-    parser.add_argument('--recon_epochstages', help="ReconBoost Parameters")
-    parser.add_argument('--recon_ensemblestages', help="ReconBoost Parameters")
-    parser.add_argument('--lr', required=False, help="Learning Rate", default=None)
-    parser.add_argument('--wd', required=False, help="Weight Decay", default=None)
-    parser.add_argument('--mm', required=False, help="Optimizer Momentum", default=None)
-    parser.add_argument('--cls', required=False, help="CLS linear, nonlinear, highlynonlinear", default=None)
-    parser.add_argument('--printing', required=False, help="print_results", default=True)
-    parser.add_argument('--pre', action='store_true')
+    parser.add_argument("--config", help="Number of config file")
+    parser.add_argument("--default_config", help="Number of config file")
+    parser.add_argument("--fold", help="Fold")
+    parser.add_argument("--alpha", help="Alpha")
+    parser.add_argument("--validate_with", help="validate_with")
+    parser.add_argument("--transform_type", help="transform_type")
+    parser.add_argument("--trasform_before", help="trasform_before")
+    parser.add_argument("--tanh_mode", help="tanh_mode")
+    parser.add_argument("--tanh_mode_beta", help="tanh_mode_beta")
+    parser.add_argument("--reg_by", help="reg_by")
+    parser.add_argument("--clip", help="Gradient Clip Value")
+    parser.add_argument("--batch_size", help="batch_size")
+    parser.add_argument("--l", help="L for Gat")
+    parser.add_argument("--multil", help="Coeff of Multi-Loss")
+    parser.add_argument("--l_diffsq", help="L for Gat")
+    parser.add_argument("--lib", help="L for Gat")
+    parser.add_argument("--ratio_us", help="lib for Gat")
+    parser.add_argument("--kmepoch", help="keep memory epoch")
+    parser.add_argument("--num_samples", help="Number of samples for Gat")
+    parser.add_argument("--pow", help="ShuffleGrad power")
+    parser.add_argument("--nstep", help="ShuffleGrad nstep Reg-Dist-Sep")
+    parser.add_argument("--contr_coeff", help="ShuffleGrad Contrastive Coefficient")
+    parser.add_argument("--kde_coeff", help="ShuffleGrad kde_coeff Coefficient")
+    parser.add_argument("--etube", help="ShuffleGrad Etube")
+    parser.add_argument("--temperature", help="ShuffleGrad Contrastive Temperature")
+    parser.add_argument("--contr_type", help="ShuffleGrad Contrastive type")
+    parser.add_argument("--shuffle_type", help="shuffle_type")
+    parser.add_argument("--num_classes", help="num_classes")
+    parser.add_argument("--base_alpha", help="Synthetic Alpha")
+    parser.add_argument("--alpha_var", help="Synthetic Alpha Variance")
+    parser.add_argument("--base_beta", help="Synthetic Beta")
+    parser.add_argument("--beta_var", help="Synthetic Beta Variance")
+    parser.add_argument("--optim_method", help="Optim for Gat")
+    parser.add_argument("--ilr_c", help="Initial Learning Rate Audio")
+    parser.add_argument("--ilr_g", help="Initial Learning Rate Video")
+    parser.add_argument("--mmcosine_scaling", help="mmcosine_scaling")
+    parser.add_argument("--ending_epoch", help="Ending epoch")
+    parser.add_argument("--load_ongoing", help="Ending epoch")
+    parser.add_argument("--commonlayers", help="Fusion with Conformer Layers")
+    parser.add_argument("--recon_weight1", help="ReconBoost Parameters")
+    parser.add_argument("--recon_weight2", help="ReconBoost Parameters")
+    parser.add_argument("--recon_epochstages", help="ReconBoost Parameters")
+    parser.add_argument("--recon_ensemblestages", help="ReconBoost Parameters")
+    parser.add_argument("--lr", required=False, help="Learning Rate", default=None)
+    parser.add_argument("--wd", required=False, help="Weight Decay", default=None)
+    parser.add_argument("--mm", required=False, help="Optimizer Momentum", default=None)
+    parser.add_argument("--cls", required=False, help="CLS linear, nonlinear, highlynonlinear", default=None)
+    parser.add_argument("--printing", required=False, help="print_results", default=True)
+    parser.add_argument("--pre", action="store_true")
     parser.set_defaults(pre=False)
     args = parser.parse_args()
 
@@ -316,15 +318,14 @@ if __name__ == "__main__":
     test = {}
     if len(config_li) == 1:
         if "UCF" in args.config:
-            for i in range(1,4):
+            for i in range(1, 4):
                 args.fold = i
                 val_metric, test_metric = print_search(config_path=args.config, default_config_path=args.default_config, args=args)
                 val[i] = val_metric
                 test[i] = test_metric
         else:
             if args.fold is None:
-                val_metric, test_metric = print_search(config_path=args.config, default_config_path=args.default_config,
-                                                       args=args)
+                val_metric, test_metric = print_search(config_path=args.config, default_config_path=args.default_config, args=args)
                 val[0] = val_metric
                 test[0] = test_metric
             else:
@@ -339,14 +340,14 @@ if __name__ == "__main__":
             val[i] = val_metric
             test[i] = test_metric
 
-
     # sys.exit()
     try:
         mean_val, std_val = print_mean(val, val=True)
         mean_test, std_test = print_mean(test, val=False)
         # print(round(mean_val*100,1), round(std_val*100,1), round(mean_test*100,1), round(std_test*100,1))
-        print(round(mean_test*100,1), round(std_test*100,1), "--")
+        print(round(mean_test * 100, 1), round(std_test * 100, 1), "--")
         import sys
+
         sys.exit(mean_test, std_test)
     except:
         print("")

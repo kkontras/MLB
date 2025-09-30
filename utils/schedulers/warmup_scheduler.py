@@ -1,4 +1,3 @@
-
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ import torch.nn as nn
 
 
 class WarmupScheduler(nn.Module):
-    '''A simple wrapper class for learning rate scheduling'''
+    """A simple wrapper class for learning rate scheduling"""
 
     def __init__(self, optimizer, base_lr, n_warmup_steps, after_scheduler):
         super().__init__()
@@ -18,13 +17,12 @@ class WarmupScheduler(nn.Module):
         self.after_scheduler = after_scheduler
         self.lr_history = []
 
-
     def step(self, step=None, loss=None):
         "Step with the inner optimizer"
         self._update_learning_rate(step=step, loss=loss)
 
     def _update_learning_rate(self, step, loss=None):
-        ''' Learning rate scheduling per step '''
+        """Learning rate scheduling per step"""
 
         self.n_steps += 1
 
@@ -32,7 +30,7 @@ class WarmupScheduler(nn.Module):
             lr = self.base_lr
 
             for param_group in self._optimizer.param_groups:
-                param_group['lr'] = lr
+                param_group["lr"] = lr
 
             self.lr_history.append(lr)
         else:
@@ -40,10 +38,6 @@ class WarmupScheduler(nn.Module):
             # self.after_scheduler.step(loss)
             self.after_scheduler.step(step)
             for param_group in self._optimizer.param_groups:
-                lr = param_group['lr']
+                lr = param_group["lr"]
             self.lr_history.append(lr)
-        wandb.log({"lr":lr})
-
-
-
-
+        wandb.log({"lr": lr})

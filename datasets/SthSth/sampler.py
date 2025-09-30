@@ -55,13 +55,9 @@ class GeneralSampler:
 
         if avg_interval > 0:
             base_offsets = np.arange(self.num_clips) * avg_interval
-            clip_offsets = base_offsets + np.random.randint(
-                avg_interval, size=self.num_clips
-            )
+            clip_offsets = base_offsets + np.random.randint(avg_interval, size=self.num_clips)
         elif video_length > max(self.num_clips, ori_clip_len):
-            clip_offsets = np.sort(
-                np.random.randint(video_length - ori_clip_len + 1, size=self.num_clips)
-            )
+            clip_offsets = np.sort(np.random.randint(video_length - ori_clip_len + 1, size=self.num_clips))
         elif avg_interval == 0:
             ratio = (video_length - ori_clip_len + 1.0) / self.num_clips
             clip_offsets = np.around(np.arange(self.num_clips) * ratio)
@@ -140,16 +136,11 @@ class GeneralSampler:
             frame_inds = self.get_seq_frames(video_length)
         else:
             clip_offsets = self._sample_clips(video_length)
-            frame_inds = (
-                clip_offsets[:, None]
-                + np.arange(self.clip_len)[None, :] * self.frame_interval
-            )
+            frame_inds = clip_offsets[:, None] + np.arange(self.clip_len)[None, :] * self.frame_interval
             frame_inds = np.concatenate(frame_inds)
 
             if self.temporal_jitter:
-                perframe_offsets = np.random.randint(
-                    self.frame_interval, size=len(frame_inds)
-                )
+                perframe_offsets = np.random.randint(self.frame_interval, size=len(frame_inds))
                 frame_inds += perframe_offsets
 
             frame_inds = frame_inds.reshape((-1, self.clip_len))

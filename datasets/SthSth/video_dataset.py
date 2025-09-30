@@ -14,12 +14,8 @@ class VideoDataset(ProtoDataset):
     def __init__(self, cfg: CfgNode, train: bool = False):
         self.cfg = cfg
         self.train = train
-        self.dataset_name = (
-            cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
-        )
-        self.dataset_path = (
-            cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
-        )
+        self.dataset_name = cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
+        self.dataset_path = cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
         self.dataset_type = self.cfg.DATASET_TYPE
         self.create_dataset()
         self.sampler = get_sampler["swin"](cfg=cfg, train=train)
@@ -37,10 +33,7 @@ class VideoDataset(ProtoDataset):
             narration_id = kwargs.pop("narration_id")
             unique_indices, inv_indices = np.unique(indices, return_inverse=True)
             frames = resource[video_id][narration_id][unique_indices]
-            frames = [
-                Image.open(io.BytesIO(frames[index]))
-                for index in range(len(unique_indices))
-            ]
+            frames = [Image.open(io.BytesIO(frames[index])) for index in range(len(unique_indices))]
             frames = [frames[index] for index in inv_indices]
         elif self.dataset_name == "something-something":
             unique_indices, inv_indices = np.unique(indices, return_inverse=True)
@@ -49,21 +42,13 @@ class VideoDataset(ProtoDataset):
             try:
                 frames = resource[video_id][unique_indices]
             except:
-                print(" - id {}, ui {}, len {}, len {} - ".format(video_id, unique_indices, len(resource),
-                                                                  len(resource[video_id])))
+                print(" - id {}, ui {}, len {}, len {} - ".format(video_id, unique_indices, len(resource), len(resource[video_id])))
                 raise EOFError()
 
-
-
-            frames = [
-                Image.open(io.BytesIO(frames[index]))
-                for index in range(len(unique_indices))
-            ]
+            frames = [Image.open(io.BytesIO(frames[index])) for index in range(len(unique_indices))]
             frames = [frames[index] for index in inv_indices]
         else:
-            raise ValueError(
-                f"{self.dataset_type} cannot load anything with this dataset!"
-            )
+            raise ValueError(f"{self.dataset_type} cannot load anything with this dataset!")
         return frames
 
     def get_flow_frames(self, **kwargs):
@@ -81,41 +66,26 @@ class VideoDataset(ProtoDataset):
             indices_u = 2 * indices
             indices_v = indices_u + 1
 
-            indices = np.empty(
-                (indices_u.size + indices_v.size,), dtype=indices_u.dtype
-            )
+            indices = np.empty((indices_u.size + indices_v.size,), dtype=indices_u.dtype)
             indices[0::2] = indices_u
             indices[1::2] = indices_v
 
             unique_indices, inv_indices = np.unique(indices, return_inverse=True)
 
             frames = resource[video_id][narration_id][unique_indices]
-            frames = [
-                Image.open(io.BytesIO(frames[index]))
-                for index in range(len(unique_indices))
-            ]
+            frames = [Image.open(io.BytesIO(frames[index])) for index in range(len(unique_indices))]
             frames = [frames[index] for index in inv_indices]
             frames_u = frames[0::2]
             frames_v = frames[1::2]
 
-            frames = [
-                Image.merge(
-                    "RGB", [frame_u, frame_v, Image.new("L", size=frame_v.size)]
-                )
-                for frame_u, frame_v in zip(frames_u, frames_v)
-            ]
+            frames = [Image.merge("RGB", [frame_u, frame_v, Image.new("L", size=frame_v.size)]) for frame_u, frame_v in zip(frames_u, frames_v)]
         elif self.dataset_name == "something-something":
             unique_indices, inv_indices = np.unique(indices, return_inverse=True)
             frames = resource[video_id][unique_indices]
-            frames = [
-                Image.open(io.BytesIO(frames[index]))
-                for index in range(len(unique_indices))
-            ]
+            frames = [Image.open(io.BytesIO(frames[index])) for index in range(len(unique_indices))]
             frames = [frames[index] for index in inv_indices]
         else:
-            raise ValueError(
-                f"{self.dataset_type} cannot load anything with this dataset!"
-            )
+            raise ValueError(f"{self.dataset_type} cannot load anything with this dataset!")
         return frames
 
     def get_frames(self, **kwargs):
@@ -130,9 +100,7 @@ class VideoDataset(ProtoDataset):
             self.open_resource()
         output["video_id"] = self.dataset[idx]["id"]
         if not hasattr(self, "indices"):
-            indices = self.sampler(
-                video_length=self.get_video_length(self.dataset[idx])
-            )
+            indices = self.sampler(video_length=self.get_video_length(self.dataset[idx]))
         else:
             indices = self.indices
         # print(self.get_video_length(self.dataset[idx]))

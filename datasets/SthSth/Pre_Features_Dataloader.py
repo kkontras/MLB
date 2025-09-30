@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 import multiprocessing
 import numpy as np
 
+
 class PreFeaturesDataset(Dataset):
     def __init__(self, config, train=True):
         self.config = config
@@ -15,7 +16,7 @@ class PreFeaturesDataset(Dataset):
         self.data = torch.load(data_path)
         self.data["features"]["video"] = self.data["features"]["video"].cpu()
         self.data["features"]["flow"] = self.data["features"]["flow"].cpu()
-        self.data["features"]["layout"]= self.data["features"]["layout"].cpu()
+        self.data["features"]["layout"] = self.data["features"]["layout"].cpu()
 
         self.norm = {}
         self.norm["video"] = {"mean": self.data["features"]["video"].mean(), "std": self.data["features"]["video"].std()}
@@ -25,14 +26,13 @@ class PreFeaturesDataset(Dataset):
         self.norm["mean"] = torch.cat([self.data["features"]["video"], self.data["features"]["flow"], self.data["features"]["layout"]], dim=1).mean()
         self.norm["std"] = torch.cat([self.data["features"]["video"], self.data["features"]["flow"], self.data["features"]["layout"]], dim=1).std()
 
-
         self.data["labels"] = self.data["labels"].cpu()
 
     def __len__(self):
         return len(self.data["labels"])
 
     def __getitem__(self, idx):
-        output = {"data":{}}
+        output = {"data": {}}
         output["data"][0] = self.data["features"]["video"][idx]
         output["data"][1] = self.data["features"]["flow"][idx]
         output["data"][2] = self.data["features"]["layout"][idx]
@@ -52,7 +52,7 @@ class PreFeaturesDataset(Dataset):
         return output
 
 
-class SthSth_PreFeatureDataloader():
+class SthSth_PreFeatureDataloader:
 
     def __init__(self, config):
         """
@@ -65,24 +65,24 @@ class SthSth_PreFeatureDataloader():
         g = torch.Generator()
         g.manual_seed(0)
 
-        num_cores = multiprocessing.cpu_count()-2
+        num_cores = multiprocessing.cpu_count() - 2
         # num_cores = 16
         print("We are changing dataloader workers to num of cores {}".format(num_cores))
 
         print("Train {}, Val {}".format(len(dataset_train), len(dataset_val)))
 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train,
-                                                        batch_size=self.config.training_params.batch_size,
-                                                        num_workers=num_cores,
-                                                        shuffle=True,
-                                                        generator=g,
-                                                        pin_memory=self.config.training_params.pin_memory,
-                                                        worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id))
-        self.valid_loader = torch.utils.data.DataLoader(dataset_val,
-                                                        batch_size=self.config.training_params.test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_cores,
-                                                        pin_memory=self.config.training_params.pin_memory)
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset_train,
+            batch_size=self.config.training_params.batch_size,
+            num_workers=num_cores,
+            shuffle=True,
+            generator=g,
+            pin_memory=self.config.training_params.pin_memory,
+            worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id),
+        )
+        self.valid_loader = torch.utils.data.DataLoader(
+            dataset_val, batch_size=self.config.training_params.test_batch_size, shuffle=False, num_workers=num_cores, pin_memory=self.config.training_params.pin_memory
+        )
 
     def _get_datasets(self):
 

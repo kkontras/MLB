@@ -7,6 +7,7 @@ from yacs.config import CfgNode as CN
 import multiprocessing
 from datasets.SthSth.utils_setup import get_cfg_defaults
 
+
 class VideoFlow(Dataset):
     # FIXME: Hacky
     def __init__(self, cfg, train: bool = False):
@@ -29,9 +30,7 @@ class VideoFlow(Dataset):
     def __getitem__(self, idx: int):
         flow_dict = self.flow_dataset[idx]
         self.video_dataset.set_indices(flow_dict["indices"])
-        self.video_dataset.set_existing_transforms(
-            self.flow_dataset.enforced_transforms
-        )
+        self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
         video_dict = self.video_dataset[idx]
         # Gather from both dicts
         output = {}
@@ -114,9 +113,7 @@ class VideoFlowAudio(Dataset):
         self.flow_dataset.set_indices(audio_dict["indices"])
         flow_dict = self.flow_dataset[idx]
         self.video_dataset.set_indices(audio_dict["indices"])
-        self.video_dataset.set_existing_transforms(
-            self.flow_dataset.enforced_transforms
-        )
+        self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
         video_dict = self.video_dataset[idx]
         # Gather from both dicts
         output = {}
@@ -162,7 +159,7 @@ class VideoLayoutFlow(Dataset):
         if self.config.dataset.modalities.layout.activate:
 
             # lay_cfg = get_cfg_defaults()
-            # lay_cfg.merge_from_file("/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/SthSth/gorjan_experiments/unimodal_layout/config.yaml")
+            # lay_cfg.merge_from_file("project_default_dir/data/2023_data/SthSth/gorjan_experiments/unimodal_layout/config.yaml")
             lay_cfg = CN()
             lay_cfg.defrost()
             lay_cfg.DATASET_TYPE = self.config.dataset.modalities.layout.dataset_type
@@ -231,21 +228,19 @@ class VideoLayoutFlow(Dataset):
 
             self.video_dataset = VideoDataset(video_cfg, train=train)
 
-
-
     def __len__(self):
 
-        if hasattr(self, 'layout_dataset'):
+        if hasattr(self, "layout_dataset"):
             total_len = len(self.layout_dataset)
-        elif hasattr(self, 'flow_dataset'):
+        elif hasattr(self, "flow_dataset"):
             total_len = len(self.flow_dataset)
-        elif hasattr(self, 'video_dataset'):
+        elif hasattr(self, "video_dataset"):
             total_len = len(self.video_dataset)
         return total_len
 
     def __getitem__(self, idx: int):
 
-        output = {"data":{}}
+        output = {"data": {}}
         common_indices = None
         if self.config.dataset.modalities.flow.activate:
             flow_dict = self.flow_dataset[idx]
@@ -256,9 +251,7 @@ class VideoLayoutFlow(Dataset):
         if self.config.dataset.modalities.video.activate:
             if common_indices is not None:
                 self.video_dataset.set_indices(common_indices)
-                self.video_dataset.set_existing_transforms(
-                    self.flow_dataset.enforced_transforms
-                )
+                self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
             video_dict = self.video_dataset[idx]
             common_indices = video_dict["indices"]
             output["data"][1] = video_dict["video"].squeeze().permute(1, 0, 2, 3)
@@ -301,7 +294,8 @@ import torch
 import numpy as np
 import os
 
-class SthSth_VideoLayoutFlow():
+
+class SthSth_VideoLayoutFlow:
 
     def __init__(self, config):
         """
@@ -316,7 +310,7 @@ class SthSth_VideoLayoutFlow():
 
         # os.system("taskset -c -p 0-95 %d" % os.getpid())
 
-        num_cores = len(os.sched_getaffinity(0))-1
+        num_cores = len(os.sched_getaffinity(0)) - 1
         # num_cores = 12
 
         print("Available cores {}".format(len(os.sched_getaffinity(0))))
@@ -324,18 +318,18 @@ class SthSth_VideoLayoutFlow():
 
         print("Train {}, Val {}".format(len(dataset_train), len(dataset_val)))
 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train,
-                                                        batch_size=self.config.training_params.batch_size,
-                                                        num_workers=num_cores,
-                                                        shuffle=True,
-                                                        generator=g,
-                                                        pin_memory=self.config.training_params.pin_memory,
-                                                        worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id))
-        self.valid_loader = torch.utils.data.DataLoader(dataset_val,
-                                                        batch_size=self.config.training_params.test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_cores,
-                                                        pin_memory=self.config.training_params.pin_memory)
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset_train,
+            batch_size=self.config.training_params.batch_size,
+            num_workers=num_cores,
+            shuffle=True,
+            generator=g,
+            pin_memory=self.config.training_params.pin_memory,
+            worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id),
+        )
+        self.valid_loader = torch.utils.data.DataLoader(
+            dataset_val, batch_size=self.config.training_params.test_batch_size, shuffle=False, num_workers=num_cores, pin_memory=self.config.training_params.pin_memory
+        )
 
     def _get_datasets(self):
 

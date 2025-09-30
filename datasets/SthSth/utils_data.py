@@ -130,24 +130,15 @@ class VideoRandomCrop:
         self.spatial_size = (spatial_size, spatial_size)
 
     def __call__(self, frame: Image):
-        if (
-            not hasattr(self, "top")
-            and not hasattr(self, "left")
-            and not hasattr(self, "height")
-            and not hasattr(self, "width")
-        ):
-            self.top, self.left, self.height, self.width = RandomCrop.get_params(
-                frame, self.spatial_size
-            )
+        if not hasattr(self, "top") and not hasattr(self, "left") and not hasattr(self, "height") and not hasattr(self, "width"):
+            self.top, self.left, self.height, self.width = RandomCrop.get_params(frame, self.spatial_size)
 
         return TF.crop(frame, self.top, self.left, self.height, self.width)
 
 
 class VideoResize:
     def __init__(self, spatial_size: int, train: bool = False, **kwargs):
-        frame_size = (
-            int(spatial_size * random.uniform(1.15, 1.43)) if train else spatial_size
-        )
+        frame_size = int(spatial_size * random.uniform(1.15, 1.43)) if train else spatial_size
         self.resize = Resize(frame_size, antialias=True)
 
     def __call__(self, img: Image):
@@ -201,9 +192,7 @@ class AudioResize:
 
 
 class AudioTimeStretch:
-    def __init__(
-        self, p: float = 0.5, spatial_size: int = 224, train: bool = False, **kwargs
-    ):
+    def __init__(self, p: float = 0.5, spatial_size: int = 224, train: bool = False, **kwargs):
         self.spatial_size = spatial_size
         self.train = train
         self.p = p
@@ -217,16 +206,10 @@ class AudioTimeStretch:
 
 
 class AudioTimeMasking:
-    def __init__(
-        self, p: float = 0.5, time_mask_param: int = 80, train: bool = False, **kwargs
-    ):
+    def __init__(self, p: float = 0.5, time_mask_param: int = 80, train: bool = False, **kwargs):
         self.train = train
         self.p = p
-        self.transform = (
-            TAT.TimeMasking(time_mask_param=time_mask_param, iid_masks=True)
-            if self.train
-            else IdentityTransform()
-        )
+        self.transform = TAT.TimeMasking(time_mask_param=time_mask_param, iid_masks=True) if self.train else IdentityTransform()
 
     def __call__(self, img: torch.Tensor):
         if random.uniform(0, 1) < self.p:
@@ -235,16 +218,10 @@ class AudioTimeMasking:
 
 
 class AudioFrequencyMasking:
-    def __init__(
-        self, p: float = 0.5, freq_mask_param: int = 80, train: bool = False, **kwargs
-    ):
+    def __init__(self, p: float = 0.5, freq_mask_param: int = 80, train: bool = False, **kwargs):
         self.train = train
         self.p = p
-        self.transform = (
-            TAT.FrequencyMasking(freq_mask_param=freq_mask_param, iid_masks=True)
-            if self.train
-            else IdentityTransform()
-        )
+        self.transform = TAT.FrequencyMasking(freq_mask_param=freq_mask_param, iid_masks=True) if self.train else IdentityTransform()
 
     def __call__(self, img: torch.Tensor):
         if random.uniform(0, 1) < self.p:
@@ -291,17 +268,13 @@ augname2aug = {
 }
 
 
-def get_video_transforms(
-    augmentations_list: List[str], cfg: CfgNode, train: bool = False, **kwargs
-):
+def get_video_transforms(augmentations_list: List[str], cfg: CfgNode, train: bool = False, **kwargs):
     aug_list = deepcopy(augmentations_list)
     existing_transforms = kwargs.pop("existing_transforms", {})
     # Testing
     if not train:
         return {
-            "VideoResize": VideoResize(
-                spatial_size=spatial_sizes[cfg.MODEL_NAME], train=False
-            ),
+            "VideoResize": VideoResize(spatial_size=spatial_sizes[cfg.MODEL_NAME], train=False),
             "ToTensor": ToTensor(),
             "VideoInferenceCrop": VideoInferenceCrop(
                 spatial_size=224,
@@ -312,41 +285,35 @@ def get_video_transforms(
     aug_list.append("ToTensor")
 
     return {
-        aug_name: augname2aug[aug_name](
-            spatial_size=224,
-            train=train,
-            p=0.5,
-            model_name=cfg.MODEL_NAME,
-            **kwargs,
+        aug_name: (
+            augname2aug[aug_name](
+                spatial_size=224,
+                train=train,
+                p=0.5,
+                model_name=cfg.MODEL_NAME,
+                **kwargs,
+            )
+            if aug_name not in existing_transforms
+            else existing_transforms[aug_name]
         )
-        if aug_name not in existing_transforms
-        else existing_transforms[aug_name]
         for aug_name in aug_list
     }
 
 
-def get_audio_transforms(
-    augmentations_list: List[str], cfg: CfgNode, train: bool = False, **kwargs
-):
+def get_audio_transforms(augmentations_list: List[str], cfg: CfgNode, train: bool = False, **kwargs):
     aug_list = deepcopy(augmentations_list)
     existing_transforms = kwargs.pop("existing_transforms", {})
     spatial_size = spatial_sizes[cfg.MODEL_NAME]
     # Testing
     if not train:
         return {
-            "AudioResize": AudioResize(
-                spatial_size=(spatial_size, spatial_size), train=False
-            ),
+            "AudioResize": AudioResize(spatial_size=(spatial_size, spatial_size), train=False),
             "AudioAmplitudeToDB": AudioAmplitudeToDB(),
         }
     # During training, always add AudioNormalize to the list
     aug_list.append("AudioAmplitudeToDB")
     return {
-        aug_name: augname2aug[aug_name](
-            spatial_size=spatial_size, train=train, **kwargs
-        )
-        if aug_name not in existing_transforms
-        else existing_transforms[aug_name]
+        aug_name: augname2aug[aug_name](spatial_size=spatial_size, train=train, **kwargs) if aug_name not in existing_transforms else existing_transforms[aug_name]
         for aug_name in aug_list
     }
 
@@ -377,17 +344,11 @@ def extract_audio_segments(audio_frames, segment_length, audio_indices):
         left_frame = centre_frame - math.floor(segment_length / 2)
         right_frame = centre_frame + math.ceil(segment_length / 2)
         if left_frame < 0 and right_frame > num_frames:
-            samples = torch.nn.functional.pad(
-                audio_frames, pad=(abs(left_frame), right_frame - num_frames)
-            )
+            samples = torch.nn.functional.pad(audio_frames, pad=(abs(left_frame), right_frame - num_frames))
         elif left_frame < 0:
-            samples = torch.nn.functional.pad(audio_frames, pad=(abs(left_frame), 0))[
-                :, :segment_length
-            ]
+            samples = torch.nn.functional.pad(audio_frames, pad=(abs(left_frame), 0))[:, :segment_length]
         elif right_frame > num_frames:
-            samples = torch.nn.functional.pad(
-                audio_frames, pad=(0, right_frame - num_frames)
-            )[:, -segment_length:]
+            samples = torch.nn.functional.pad(audio_frames, pad=(0, right_frame - num_frames))[:, -segment_length:]
         else:
             samples = audio_frames[:, left_frame:right_frame]
         audio_segments.append(samples)

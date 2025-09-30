@@ -5,8 +5,8 @@ All rights reserved.
 
 # Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is
 # holder of all proprietary rights on this computer program.
-# Using this computer program means that you agree to the terms 
-# in the LICENSE file included with this software distribution. 
+# Using this computer program means that you agree to the terms
+# in the LICENSE file included with this software distribution.
 # Any use not explicitly granted by the LICENSE is prohibited.
 #
 # Copyright©2022 Max-Planck-Gesellschaft zur Förderung
@@ -17,18 +17,16 @@ All rights reserved.
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 """
 
-
 import numpy as np
 from skimage.transform import estimate_transform, warp
 
 
-def bbox2point(left, right, top, bottom, type='bbox'):
-    ''' bbox from detector and landmarks are different
-    '''
-    if type == 'kpt68':
+def bbox2point(left, right, top, bottom, type="bbox"):
+    """bbox from detector and landmarks are different"""
+    if type == "kpt68":
         old_size = (right - left + bottom - top) / 2 * 1.1
         center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0])
-    elif type == 'bbox':
+    elif type == "bbox":
         old_size = (right - left + bottom - top) / 2
         center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0 + old_size * 0.12])
     else:
@@ -39,9 +37,7 @@ def bbox2point(left, right, top, bottom, type='bbox'):
 def point2bbox(center, size):
     size2 = size / 2
 
-    src_pts = np.array(
-        [[center[0] - size2, center[1] - size2], [center[0] - size2, center[1] + size2],
-         [center[0] + size2, center[1] - size2]])
+    src_pts = np.array([[center[0] - size2, center[1] - size2], [center[0] - size2, center[1] + size2], [center[0] + size2, center[1] - size2]])
     return src_pts
 
 
@@ -49,7 +45,7 @@ def point2transform(center, size, target_size_height, target_size_width):
     target_size_width = target_size_width or target_size_height
     src_pts = point2bbox(center, size)
     dst_pts = np.array([[0, 0], [0, target_size_width - 1], [target_size_height - 1, 0]])
-    tform = estimate_transform('similarity', src_pts, dst_pts)
+    tform = estimate_transform("similarity", src_pts, dst_pts)
     return tform
 
 

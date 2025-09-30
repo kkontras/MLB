@@ -10,7 +10,8 @@ from torch.cuda.amp import GradScaler, autocast
 sys.path.append(os.getcwd())
 import utils
 
-class ModelWrapper():
+
+class ModelWrapper:
     def __init__(self, args, **kwargs):
         self.args = args
         self.device = args.device
@@ -19,36 +20,34 @@ class ModelWrapper():
         self.num_layers = args.num_layers
         self.output_num = args.output_num
         self.lab_type = args.label_type
-        self.lbl_learning  = args.label_learning
+        self.lbl_learning = args.label_learning
         self.lr = args.lr
         self.model_path = args.model_path
 
-
         return
-
 
     def init_model(self):
         """
         Define model and load pretrained weights
         """
-        assert self.model_type in [
-            "wav2vec2-large", "wav2vec2-large-robust"], \
-            print("Wrong model type")
-        
-        default_models={
+        assert self.model_type in ["wav2vec2-large", "wav2vec2-large-robust"], print("Wrong model type")
+
+        default_models = {
             "wav2vec2": "wav2vec2-large-robust",
         }
         real_model_name = default_models.get(self.model_type, self.model_type)
-        assert real_model_name not in ["wav2vec2"], \
-            print("Model name is not properly converted.\n \
-                Current model_name:", real_model_name
-            )
-        
+        assert real_model_name not in ["wav2vec2"], print(
+            "Model name is not properly converted.\n \
+                Current model_name:",
+            real_model_name,
+        )
+
         root_model_type = real_model_name.split("-")[0]
-        assert root_model_type in ["wav2vec2"], \
-            print("Can't specify the root model type\n \
-                Current root_model_type:", root_model_type
-            )
+        assert root_model_type in ["wav2vec2"], print(
+            "Can't specify the root model type\n \
+                Current root_model_type:",
+            root_model_type,
+        )
 
         #### Wav2vec2
         if root_model_type == "wav2vec2":
@@ -57,11 +56,10 @@ class ModelWrapper():
             - Freeze feature encoder (for all wav2vec2 models)
             - Prune top 12 transformer layers (for wav2vec2-large-robust)
             """
-            self.wav2vec_model= Wav2Vec2Model.from_pretrained("facebook/"+real_model_name)
+            self.wav2vec_model = Wav2Vec2Model.from_pretrained("facebook/" + real_model_name)
             self.wav2vec_model.freeze_feature_encoder()
             if real_model_name == "wav2vec2-large-robust":
                 del self.wav2vec_model.encoder.layers[12:]
- 
 
         self.acoustic_model = avmodel.Acoustic(self.args)
         self.visual_model = avmodel.Visual(self.args)
@@ -93,40 +91,38 @@ class ModelWrapper():
         self.model_type_list = ["head", "wav2vec"]
 
         return self.wav2vec_model
-    
 
-        
     def init_optimizer(self):
         """
         Define optimizer for pre-trained model
         """
 
-        assert self.wav2vec_model is not None and self.shared_model is not None, \
-            print("Model is not initialized")
-        
-        self.acoustic_model_opt = optim.Adam(self.acoustic_model.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.visual_model_opt = optim.Adam(self.visual_model.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.weights_opt = optim.Adam(self.weights.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.shared_model_opt = optim.Adam(self.shared_model.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
+        assert self.wav2vec_model is not None and self.shared_model is not None, print("Model is not initialized")
 
-        self.MLP_a_opt = optim.Adam(self.MLP_a.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.MLP_v_opt = optim.Adam(self.MLP_v.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.MLP_av_opt = optim.Adam(self.MLP_av.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
+        self.acoustic_model_opt = optim.Adam(self.acoustic_model.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.visual_model_opt = optim.Adam(self.visual_model.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.weights_opt = optim.Adam(self.weights.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.shared_model_opt = optim.Adam(self.shared_model.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
 
-        self.MLP_rec_a_opt = optim.Adam(self.MLP_rec_a.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
-        self.MLP_rec_v_opt = optim.Adam(self.MLP_rec_v.parameters(), lr=self.lr ,weight_decay=5e-7, betas=(0.95, 0.999))
+        self.MLP_a_opt = optim.Adam(self.MLP_a.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.MLP_v_opt = optim.Adam(self.MLP_v.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.MLP_av_opt = optim.Adam(self.MLP_av.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+
+        self.MLP_rec_a_opt = optim.Adam(self.MLP_rec_a.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
+        self.MLP_rec_v_opt = optim.Adam(self.MLP_rec_v.parameters(), lr=self.lr, weight_decay=5e-7, betas=(0.95, 0.999))
 
         self.scaler = GradScaler()
-    
+
     def feed_forward(self, xa, xv, eval=False, **kwargs):
         """
         Feed forward the model
         """
+
         def __inference__(self, x_aud, x_vid, mode, **kwargs):
 
             mask = kwargs.get("attention_mask", None)
 
-            if mode == 'acoustic':  
+            if mode == "acoustic":
                 # print(0)
                 x_in = self.wav2vec_model(x_aud, attention_mask=mask).last_hidden_state
                 representation_aud = self.acoustic_model(x_in)
@@ -137,8 +133,7 @@ class ModelWrapper():
 
                 return pred, torch.mean(x_in, dim=1), rec_pred
 
-
-            elif mode == 'visual':
+            elif mode == "visual":
                 # print(1)
                 representation_vid = self.visual_model(x_vid)
                 rep = self.shared_model(representation_vid)
@@ -148,13 +143,13 @@ class ModelWrapper():
 
                 return pred, torch.mean(x_vid, dim=1), rec_pred
 
-            elif mode == 'weights':
+            elif mode == "weights":
                 self.acoustic_model.eval()
                 self.visual_model.eval()
                 self.MLP_a.eval()
                 self.MLP_v.eval()
                 self.shared_model.eval()
-                
+
                 if len(x_aud.size()) == 2:
                     x_aud = self.wav2vec_model(x_aud, attention_mask=mask).last_hidden_state
                 # print(x_in.size(), 'x_in')
@@ -173,19 +168,19 @@ class ModelWrapper():
                 pred = self.weights(rep_a, rep_v)  # Shape: [batch_size, num_tasks]
 
                 return pred_a, pred_v, pred
-        
+
         if eval:
             with torch.no_grad():
                 return __inference__(self, xa, xv, **kwargs)
         else:
             return __inference__(self, xa, xv, **kwargs)
-    
+
     def backprop(self, total_loss, mode):
         """
         Update the model given loss
         """
 
-        if mode == 'acoustic':
+        if mode == "acoustic":
             self.acoustic_model_opt.zero_grad(set_to_none=True)
             self.shared_model_opt.zero_grad(set_to_none=True)
             self.MLP_a_opt.zero_grad(set_to_none=True)
@@ -196,7 +191,7 @@ class ModelWrapper():
             self.MLP_a_opt.step()
             self.MLP_rec_a_opt.step()
 
-        elif mode == 'visual':
+        elif mode == "visual":
             self.visual_model_opt.zero_grad(set_to_none=True)
             self.shared_model_opt.zero_grad(set_to_none=True)
             self.MLP_v_opt.zero_grad(set_to_none=True)
@@ -207,7 +202,7 @@ class ModelWrapper():
             self.MLP_v_opt.step()
             self.MLP_rec_v_opt.step()
 
-        elif mode == 'weights':
+        elif mode == "weights":
             self.weights_opt.zero_grad(set_to_none=True)
             total_loss.backward()
             self.weights_opt.step()
@@ -216,27 +211,17 @@ class ModelWrapper():
         """
         Save the model for each epoch
         """
-        torch.save(self.acoustic_model.state_dict(), \
-            os.path.join(self.model_path, "final_acoustic_head.pt"))
-        torch.save(self.visual_model.state_dict(), \
-            os.path.join(self.model_path, "final_visual_head.pt"))
-        torch.save(self.weights.state_dict(), \
-            os.path.join(self.model_path, "final_weights_head.pt"))
-        torch.save(self.shared_model.state_dict(), \
-            os.path.join(self.model_path, "final_shared_head.pt"))
+        torch.save(self.acoustic_model.state_dict(), os.path.join(self.model_path, "final_acoustic_head.pt"))
+        torch.save(self.visual_model.state_dict(), os.path.join(self.model_path, "final_visual_head.pt"))
+        torch.save(self.weights.state_dict(), os.path.join(self.model_path, "final_weights_head.pt"))
+        torch.save(self.shared_model.state_dict(), os.path.join(self.model_path, "final_shared_head.pt"))
 
-        torch.save(self.MLP_a.state_dict(), \
-            os.path.join(self.model_path, "MLP_a_head.pt"))
-        torch.save(self.MLP_v.state_dict(), \
-            os.path.join(self.model_path, "MLP_v_head.pt"))
-        torch.save(self.MLP_av.state_dict(), \
-            os.path.join(self.model_path, "MLP_av_head.pt"))
+        torch.save(self.MLP_a.state_dict(), os.path.join(self.model_path, "MLP_a_head.pt"))
+        torch.save(self.MLP_v.state_dict(), os.path.join(self.model_path, "MLP_v_head.pt"))
+        torch.save(self.MLP_av.state_dict(), os.path.join(self.model_path, "MLP_av_head.pt"))
 
-        torch.save(self.MLP_rec_a.state_dict(), \
-            os.path.join(self.model_path, "MLP_rec_a_head.pt"))
-        torch.save(self.MLP_rec_v.state_dict(), \
-            os.path.join(self.model_path, "MLP_rec_v_head.pt"))
-            
+        torch.save(self.MLP_rec_a.state_dict(), os.path.join(self.model_path, "MLP_rec_a_head.pt"))
+        torch.save(self.MLP_rec_v.state_dict(), os.path.join(self.model_path, "MLP_rec_v_head.pt"))
 
     def set_eval(self):
         """
@@ -252,6 +237,7 @@ class ModelWrapper():
         self.MLP_v.eval()
         self.MLP_rec_a.eval()
         self.MLP_rec_v.eval()
+
     def set_train(self):
         """
         Set the model to train mode
@@ -268,19 +254,17 @@ class ModelWrapper():
         self.MLP_rec_v.train()
 
     def load_model(self, model_path, run_type):
-        if run_type == 'train':
-            self.wav2vec_model.load_state_dict(torch.load(model_path+"/final_wav2vec.pt"))
+        if run_type == "train":
+            self.wav2vec_model.load_state_dict(torch.load(model_path + "/final_wav2vec.pt"))
         else:
-            self.acoustic_model.load_state_dict(torch.load(model_path+"/final_acoustic_head.pt"))
-            self.visual_model.load_state_dict(torch.load(model_path+"/final_visual_head.pt"))
-            self.weights.load_state_dict(torch.load(model_path+"/final_weights_head.pt"))
-            self.shared_model.load_state_dict(torch.load(model_path+"/final_shared_head.pt"))
+            self.acoustic_model.load_state_dict(torch.load(model_path + "/final_acoustic_head.pt"))
+            self.visual_model.load_state_dict(torch.load(model_path + "/final_visual_head.pt"))
+            self.weights.load_state_dict(torch.load(model_path + "/final_weights_head.pt"))
+            self.shared_model.load_state_dict(torch.load(model_path + "/final_shared_head.pt"))
 
-            self.MLP_a.load_state_dict(torch.load(model_path+"/MLP_a_head.pt"))
-            self.MLP_av.load_state_dict(torch.load(model_path+"/MLP_av_head.pt"))
-            self.MLP_v.load_state_dict(torch.load(model_path+"/MLP_v_head.pt"))
+            self.MLP_a.load_state_dict(torch.load(model_path + "/MLP_a_head.pt"))
+            self.MLP_av.load_state_dict(torch.load(model_path + "/MLP_av_head.pt"))
+            self.MLP_v.load_state_dict(torch.load(model_path + "/MLP_v_head.pt"))
 
-            self.MLP_rec_a.load_state_dict(torch.load(model_path+"MLP_rec_a_head.pt"))
-            self.MLP_rec_v.load_state_dict(torch.load(model_path+"MLP_rec_v_head.pt"))
-
-
+            self.MLP_rec_a.load_state_dict(torch.load(model_path + "MLP_rec_a_head.pt"))
+            self.MLP_rec_v.load_state_dict(torch.load(model_path + "MLP_rec_v_head.pt"))

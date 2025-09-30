@@ -1,2 +1,7 @@
 .idea/
 *.iml
+**/__pycache__/
+__pycache__/
+*.pyc
+pyproject.toml
+.ruff_cache/

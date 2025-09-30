@@ -36,14 +36,15 @@ class DepthwiseConv1d(nn.Module):
 
 
     """
+
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            kernel_size: int,
-            stride: int = 1,
-            padding: int = 0,
-            bias: bool = False,
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: int = 0,
+        bias: bool = False,
     ) -> None:
         super(DepthwiseConv1d, self).__init__()
         assert out_channels % in_channels == 0, "out_channels should be constant multiple of in_channels"
@@ -79,13 +80,14 @@ class PointwiseConv1d(nn.Module):
     Returns: outputs
         - **outputs** (batch, out_channels, time): Tensor produces by pointwise 1-D convolution.
     """
+
     def __init__(
-            self,
-            in_channels: int,
-            out_channels: int,
-            stride: int = 1,
-            padding: int = 0,
-            bias: bool = True,
+        self,
+        in_channels: int,
+        out_channels: int,
+        stride: int = 1,
+        padding: int = 0,
+        bias: bool = True,
     ) -> None:
         super(PointwiseConv1d, self).__init__()
         self.conv = nn.Conv1d(
@@ -118,12 +120,13 @@ class ConformerConvModule(nn.Module):
     Outputs: outputs
         outputs (batch, time, dim): Tensor produces by conformer convolution module.
     """
+
     def __init__(
-            self,
-            in_channels: int,
-            kernel_size: int = 31,
-            expansion_factor: int = 2,
-            dropout_p: float = 0.1,
+        self,
+        in_channels: int,
+        kernel_size: int = 31,
+        expansion_factor: int = 2,
+        dropout_p: float = 0.1,
     ) -> None:
         super(ConformerConvModule, self).__init__()
         assert (kernel_size - 1) % 2 == 0, "kernel_size should be a odd number for 'SAME' padding"
@@ -160,6 +163,7 @@ class Conv2dSubampling(nn.Module):
         - **outputs** (batch, time, dim): Tensor produced by the convolution
         - **output_lengths** (batch): list of sequence output lengths
     """
+
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super(Conv2dSubampling, self).__init__()
         self.sequential = nn.Sequential(

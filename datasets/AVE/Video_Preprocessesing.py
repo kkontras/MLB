@@ -28,9 +28,8 @@ class videoReader(object):
         while success:
             count += 1
             if count % self.frame_interval == 0:
-                save_name = '{}/frame_{}_{}.jpg'.format(self.frame_save_path, int(count / self.fps),
-                                                        count)  # filename_second_index
-                cv2.imencode('.jpg', image)[1].tofile(save_name)
+                save_name = "{}/frame_{}_{}.jpg".format(self.frame_save_path, int(count / self.fps), count)  # filename_second_index
+                cv2.imencode(".jpg", image)[1].tofile(save_name)
             success, image = self.vid.read()
 
     def video2frame_update(self, frame_save_path, min_save_frame=3):
@@ -46,8 +45,8 @@ class videoReader(object):
             if count % self.fps == 0:
                 frame_id = 0
             if frame_id < frame_interval * self.frame_kept_per_second and frame_id % frame_interval == 0:
-                save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, count)
-                cv2.imencode('.jpg', image)[1].tofile(save_name)
+                save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, count)
+                cv2.imencode(".jpg", image)[1].tofile(save_name)
                 save_count += 1
 
             frame_id += 1
@@ -59,20 +58,20 @@ class videoReader(object):
             if self.video_frames < min_save_frame:
                 while count < add_count:
                     frame_id = np.random.randint(0, min_save_frame)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
             else:
                 while count < add_count:
                     frame_id = np.random.randint(0, self.video_frames)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
 
     def video2frame_update_SE(self, frame_save_path, min_save_frame=3, start_t=0, end_t=10):
@@ -92,8 +91,8 @@ class videoReader(object):
             if frame_id < frame_interval * self.frame_kept_per_second and frame_id % frame_interval == 0:
                 if start_t <= num_count <= end_t:
                     # print('save')
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, count)
-                    cv2.imencode('.jpg', image)[1].tofile(save_name)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, count)
+                    cv2.imencode(".jpg", image)[1].tofile(save_name)
                     save_count += 1
                 num_count += 1
 
@@ -106,48 +105,48 @@ class videoReader(object):
             if self.video_frames < min_save_frame:
                 while count < add_count:
                     frame_id = np.random.randint(0, min_save_frame)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
             else:
                 while count < add_count:
-                    frame_id = np.random.randint(start_t*self.fps, end_t*self.fps)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    frame_id = np.random.randint(start_t * self.fps, end_t * self.fps)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
+
 
 class AVE_dataset(object):
     def __init__(self, path_to_dataset=None, frame_interval=1, frame_kept_per_second=1):
-        self.path_to_video = os.path.join(path_to_dataset, 'AVE')
-        self.path_to_audio = os.path.join(path_to_dataset, 'Audios')
+        self.path_to_video = os.path.join(path_to_dataset, "AVE")
+        self.path_to_audio = os.path.join(path_to_dataset, "Audios")
         self.frame_kept_per_second = frame_kept_per_second
         self.sr = 16000
 
-        self.path_to_save = os.path.join(path_to_dataset, 'Image-{:02d}-FPS-SE'.format(self.frame_kept_per_second))
+        self.path_to_save = os.path.join(path_to_dataset, "Image-{:02d}-FPS-SE".format(self.frame_kept_per_second))
         if not os.path.exists(self.path_to_save):
             os.mkdir(self.path_to_save)
 
-        self.path_to_save_audio = os.path.join(path_to_dataset, 'Audio-{:d}-SE'.format(1004))
+        self.path_to_save_audio = os.path.join(path_to_dataset, "Audio-{:d}-SE".format(1004))
         if not os.path.exists(self.path_to_save_audio):
             os.mkdir(self.path_to_save_audio)
 
-
         # csv_file = pd.read_csv(os.path.join(path_to_dataset, 'Annotations.txt'))
-        with open(os.path.join(path_to_dataset, 'Annotations.txt'), 'r') as f:
+        with open(os.path.join(path_to_dataset, "Annotations.txt"), "r") as f:
             self.file_list = f.readlines()
 
     def extractImage(self):
 
         for each_video in self.file_list[1:]:
-            print('Processing {}'.format(each_video), end="")
-            each_video = each_video.split('&')
-            video_dir = os.path.join(self.path_to_video, each_video[1]+'.mp4')
+            print("Processing {}".format(each_video), end="")
+            each_video = each_video.split("&")
+            video_dir = os.path.join(self.path_to_video, each_video[1] + ".mp4")
             self.videoReader = videoReader(video_path=video_dir, frame_kept_per_second=self.frame_kept_per_second)
 
             save_dir = os.path.join(self.path_to_save, each_video[1])
@@ -158,35 +157,33 @@ class AVE_dataset(object):
     def extractImage_SE(self):
 
         for each_video in self.file_list[1:]:
-            print('Processing {}'.format(each_video), end="")
-            each_video = each_video.split('&')
+            print("Processing {}".format(each_video), end="")
+            each_video = each_video.split("&")
             start_t = int(each_video[3])
             end_t = int(each_video[4])
 
-            if end_t==0:
+            if end_t == 0:
                 print("This ones is skipped")
                 continue
 
-            video_dir = os.path.join(self.path_to_video, each_video[1]+'.mp4')
+            video_dir = os.path.join(self.path_to_video, each_video[1] + ".mp4")
             self.videoReader = videoReader(video_path=video_dir, frame_kept_per_second=self.frame_kept_per_second)
 
             save_dir = os.path.join(self.path_to_save, each_video[1])
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
-            self.videoReader.video2frame_update_SE(frame_save_path=save_dir, min_save_frame=10,
-                                                   start_t=start_t, end_t=end_t)  # 每个视频最少取10张图片
-
+            self.videoReader.video2frame_update_SE(frame_save_path=save_dir, min_save_frame=10, start_t=start_t, end_t=end_t)  # 每个视频最少取10张图片
 
     def extractWav(self):
         for each_audio in self.file_list[1:]:
-            print('Processing {}'.format(each_audio), end="")
-            each_audio = each_audio.split('&')
-            audio_dir = os.path.join(self.path_to_audio, each_audio[1] + '.wav')
+            print("Processing {}".format(each_audio), end="")
+            each_audio = each_audio.split("&")
+            audio_dir = os.path.join(self.path_to_audio, each_audio[1] + ".wav")
 
             samples, rate = librosa.load(audio_dir, sr=self.sr)
-            resamples = np.tile(samples, 10)[:self.sr * 10]
-            resamples[resamples > 1.] = 1.
-            resamples[resamples < -1.] = -1.
+            resamples = np.tile(samples, 10)[: self.sr * 10]
+            resamples[resamples > 1.0] = 1.0
+            resamples[resamples < -1.0] = -1.0
 
             # spectrogram = librosa.stft(resamples, n_fft=512, hop_length=353)
             frequencies, times, spectrogram = signal.spectrogram(resamples, rate, nperseg=512, noverlap=353)
@@ -195,30 +192,30 @@ class AVE_dataset(object):
             std = np.std(spectrogram)
             spectrogram = np.divide(spectrogram - mean, std + 1e-9)
             # print(spectrogram.shape)
-            save_name = os.path.join(self.path_to_save_audio, each_audio[1] + '.pkl')
-            with open(save_name, 'wb') as fid:
+            save_name = os.path.join(self.path_to_save_audio, each_audio[1] + ".pkl")
+            with open(save_name, "wb") as fid:
                 pickle.dump(spectrogram, fid)
 
     def extractWav_SE(self):
         for each_audio in self.file_list[1:]:
-            print('Processing {}'.format(each_audio), end="")
-            each_audio = each_audio.split('&')
+            print("Processing {}".format(each_audio), end="")
+            each_audio = each_audio.split("&")
             start_t = int(each_audio[3])
             end_t = int(each_audio[4])
 
-            audio_dir = os.path.join(self.path_to_audio, each_audio[1] + '.wav')
+            audio_dir = os.path.join(self.path_to_audio, each_audio[1] + ".wav")
 
             shape = self.sr * 10
             samples, rate = librosa.load(audio_dir, sr=self.sr)
-            samples = samples[self.sr*start_t:self.sr*end_t]
+            samples = samples[self.sr * start_t : self.sr * end_t]
             resamples = np.tile(samples, 10)
             if resamples.shape[0] < shape:
                 resamples = np.tile(resamples, 10)[:shape]
             else:
                 resamples = resamples[:shape]
-            print('shape', resamples.shape)
-            resamples[resamples > 1.] = 1.
-            resamples[resamples < -1.] = -1.
+            print("shape", resamples.shape)
+            resamples[resamples > 1.0] = 1.0
+            resamples[resamples < -1.0] = -1.0
 
             # spectrogram = librosa.stft(resamples, n_fft=512, hop_length=353)
             frequencies, times, spectrogram = signal.spectrogram(resamples, rate, nperseg=512, noverlap=353)
@@ -227,11 +224,11 @@ class AVE_dataset(object):
             # std = np.std(spectrogram)
             # spectrogram = np.divide(spectrogram - mean, std + 1e-9)
             # print(spectrogram.shape)
-            save_name = os.path.join(self.path_to_save_audio, each_audio[1] + '.pkl')
-            with open(save_name, 'wb') as fid:
+            save_name = os.path.join(self.path_to_save_audio, each_audio[1] + ".pkl")
+            with open(save_name, "wb") as fid:
                 pickle.dump(spectrogram, fid)
 
 
-ave = AVE_dataset(path_to_dataset="/esat/smcdata/users/kkontras/Image_Dataset/no_backup/AVE/AVE_Dataset")
+ave = AVE_dataset(path_to_dataset="project_default_dir/AVE/AVE_Dataset")
 # ave.extractImage_SE()
 ave.extractWav_SE()

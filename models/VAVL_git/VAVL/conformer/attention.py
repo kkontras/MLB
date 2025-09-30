@@ -43,11 +43,12 @@ class RelativeMultiHeadAttention(nn.Module):
     Returns:
         - **outputs**: Tensor produces by relative multi head attention module.
     """
+
     def __init__(
-            self,
-            d_model: int = 512,
-            num_heads: int = 16,
-            dropout_p: float = 0.1,
+        self,
+        d_model: int = 512,
+        num_heads: int = 16,
+        dropout_p: float = 0.1,
     ):
         super(RelativeMultiHeadAttention, self).__init__()
         assert d_model % num_heads == 0, "d_model % num_heads should be zero."
@@ -70,12 +71,12 @@ class RelativeMultiHeadAttention(nn.Module):
         self.out_proj = Linear(d_model, d_model)
 
     def forward(
-            self,
-            query: Tensor,
-            key: Tensor,
-            value: Tensor,
-            pos_embedding: Tensor,
-            mask: Optional[Tensor] = None,
+        self,
+        query: Tensor,
+        key: Tensor,
+        value: Tensor,
+        pos_embedding: Tensor,
+        mask: Optional[Tensor] = None,
     ) -> Tensor:
         batch_size = value.size(0)
 
@@ -133,6 +134,7 @@ class MultiHeadedSelfAttentionModule(nn.Module):
     Returns:
         - **outputs** (batch, time, dim): Tensor produces by relative multi headed self attention module.
     """
+
     def __init__(self, d_model: int, num_heads: int, dropout_p: float = 0.1):
         super(MultiHeadedSelfAttentionModule, self).__init__()
         self.positional_encoding = PositionalEncoding(d_model)

@@ -13,6 +13,7 @@ from utils.dirs import create_dirs
 import sys
 import copy
 
+
 def setup_logging(log_dir):
     log_file_format = "[%(levelname)s] - %(asctime)s - %(name)s - : %(message)s in %(pathname)s:%(lineno)d"
     log_console_format = "[%(levelname)s]: %(message)s"
@@ -27,11 +28,11 @@ def setup_logging(log_dir):
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(Formatter(log_console_format))
 
-    exp_file_handler = RotatingFileHandler('{}exp_debug.log'.format(log_dir), maxBytes=10**6, backupCount=5)
+    exp_file_handler = RotatingFileHandler("{}exp_debug.log".format(log_dir), maxBytes=10**6, backupCount=5)
     exp_file_handler.setLevel(logging.DEBUG)
     exp_file_handler.setFormatter(Formatter(log_file_format))
 
-    exp_errors_file_handler = RotatingFileHandler('{}exp_error.log'.format(log_dir), maxBytes=10**6, backupCount=5)
+    exp_errors_file_handler = RotatingFileHandler("{}exp_error.log".format(log_dir), maxBytes=10**6, backupCount=5)
     exp_errors_file_handler.setLevel(logging.WARNING)
     exp_errors_file_handler.setFormatter(Formatter(log_file_format))
 
@@ -48,7 +49,7 @@ def get_config_from_json(json_file):
     """
 
     # parse the configurations from the config json file provided
-    with open(json_file, 'r') as config_file:
+    with open(json_file, "r") as config_file:
         try:
             config_dict = json.load(config_file)
             # EasyDict allows to access dict values as attributes (works recursively).
@@ -58,9 +59,8 @@ def get_config_from_json(json_file):
             print("INVALID JSON file format.. Please provide a good json file")
             exit(-1)
 
+
 def setup_logger():
-
-
 
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -70,11 +70,11 @@ def setup_logger():
     # main_logger = logging.getLogger()
     # main_logger.setLevel(logging.WARNING)
 
-    logger = logging.getLogger('wandb')
+    logger = logging.getLogger("wandb")
     logger.setLevel(logging.WARNING)
 
 
-def merge_dicts(default_dict: EasyDict, dict2: EasyDict)-> EasyDict:
+def merge_dicts(default_dict: EasyDict, dict2: EasyDict) -> EasyDict:
     """
     Recursively merges two dictionaries, combining their values.
     If a key exists in both dictionaries, the value from default_dict takes precedence.
@@ -91,7 +91,8 @@ def merge_dicts(default_dict: EasyDict, dict2: EasyDict)-> EasyDict:
 
     return merged
 
-def process_config_default(json_file, default_files=False, printing = True):
+
+def process_config_default(json_file, default_files=False, printing=True):
     """
     Get the json file
     Processing it with EasyDict to be accessible as attributes
@@ -137,7 +138,7 @@ def process_config_default(json_file, default_files=False, printing = True):
     return config
 
 
-def process_config(json_file, printing = True):
+def process_config(json_file, printing=True):
     """
     Get the json file
     Processing it with EasyDict to be accessible as attributes

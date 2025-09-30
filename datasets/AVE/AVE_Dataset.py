@@ -19,52 +19,67 @@ from tqdm import tqdm
 
 class AVEDataset(Dataset):
 
-    def __init__(self, config, mode='train'):
+    def __init__(self, config, mode="train"):
         self.args = config
         self.image = []
         self.audio = []
         self.label = []
         self.mode = mode
-        self.num_frame = config.dataset.get("num_frame",4)
+        self.num_frame = config.dataset.get("num_frame", 4)
 
         self.data_root = self.args.dataset.data_roots
 
-        self.visual_feature_path = r'{}'.format(self.data_root)
-        self.audio_feature_path = r'{}/Audio-1004-SE'.format(self.data_root)
+        self.visual_feature_path = r"{}".format(self.data_root)
+        self.audio_feature_path = r"{}/Audio-1004-SE".format(self.data_root)
 
-        self.train_txt = './datasets/AVE/trainSet.txt'
-        self.test_txt = './datasets/AVE/testSet.txt'
-        self.val_txt = './datasets/AVE/valSet.txt'
+        self.train_txt = "./datasets/AVE/trainSet.txt"
+        self.test_txt = "./datasets/AVE/testSet.txt"
+        self.val_txt = "./datasets/AVE/valSet.txt"
 
-
-        if mode == 'train':
+        if mode == "train":
             txt_file = self.train_txt
-        elif mode == 'test':
+        elif mode == "test":
             txt_file = self.test_txt
         else:
             txt_file = self.val_txt
 
-        class_dict = {'Church bell': 0,
-                      'Male speech, man speaking': 1,
-                      'Bark': 2,
-                      'Fixed-wing aircraft, airplane': 3,
-                      'Race car, auto racing': 4,
-                      'Female speech, woman speaking': 5,
-                      'Helicopter': 6, 'Violin, fiddle': 7,
-                      'Flute': 8, 'Ukulele': 9, 'Frying (food)': 10,
-                      'Truck': 11, 'Shofar': 12, 'Motorcycle': 13, 'Acoustic guitar': 14,
-                      'Train horn': 15, 'Clock': 16, 'Banjo': 17, 'Goat': 18,
-                      'Baby cry, infant cry': 19, 'Bus': 20, 'Chainsaw': 21, 'Cat': 22,
-                      'Horse': 23, 'Toilet flush': 24, 'Rodents, rats, mice': 25, 'Accordion': 26,
-                      'Mandolin': 27}
+        class_dict = {
+            "Church bell": 0,
+            "Male speech, man speaking": 1,
+            "Bark": 2,
+            "Fixed-wing aircraft, airplane": 3,
+            "Race car, auto racing": 4,
+            "Female speech, woman speaking": 5,
+            "Helicopter": 6,
+            "Violin, fiddle": 7,
+            "Flute": 8,
+            "Ukulele": 9,
+            "Frying (food)": 10,
+            "Truck": 11,
+            "Shofar": 12,
+            "Motorcycle": 13,
+            "Acoustic guitar": 14,
+            "Train horn": 15,
+            "Clock": 16,
+            "Banjo": 17,
+            "Goat": 18,
+            "Baby cry, infant cry": 19,
+            "Bus": 20,
+            "Chainsaw": 21,
+            "Cat": 22,
+            "Horse": 23,
+            "Toilet flush": 24,
+            "Rodents, rats, mice": 25,
+            "Accordion": 26,
+            "Mandolin": 27,
+        }
 
-
-        with open(txt_file, 'r') as f2:
+        with open(txt_file, "r") as f2:
             files = f2.readlines()
             for item in files:
-                item = item.split('&')
-                audio_path = os.path.join(self.audio_feature_path, item[1] + '.pkl')
-                visual_path = os.path.join(self.visual_feature_path, 'Image-{:02d}-FPS-SE'.format(self.args.dataset.fps), item[1])
+                item = item.split("&")
+                audio_path = os.path.join(self.audio_feature_path, item[1] + ".pkl")
+                visual_path = os.path.join(self.visual_feature_path, "Image-{:02d}-FPS-SE".format(self.args.dataset.fps), item[1])
 
                 if os.path.exists(audio_path) and os.path.exists(visual_path):
                     if audio_path not in self.audio:
@@ -75,25 +90,24 @@ class AVEDataset(Dataset):
                     print("Audio or visual path does not exist: ", audio_path, visual_path)
                     continue
 
-
     def __len__(self):
         return len(self.image)
 
     def _get_images(self, idx):
-        if self.mode == 'train':
-            transform = transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                # transforms.Resize(size=(224, 224)),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
+        if self.mode == "train":
+            transform = transforms.Compose(
+                [
+                    transforms.RandomResizedCrop(224),
+                    # transforms.Resize(size=(224, 224)),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.ToTensor(),
+                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                ]
+            )
         else:
-            transform = transforms.Compose([
-                transforms.Resize(size=(224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
+            transform = transforms.Compose(
+                [transforms.Resize(size=(224, 224)), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+            )
 
         # Visual
         image_samples = os.listdir(self.image[idx])
@@ -102,39 +116,37 @@ class AVEDataset(Dataset):
         images = torch.zeros((self.args.dataset.num_frame, 3, 224, 224))
         for i in range(self.args.dataset.num_frame):
 
-            img = Image.open(os.path.join(self.image[idx], image_samples[i])).convert('RGB')
+            img = Image.open(os.path.join(self.image[idx], image_samples[i])).convert("RGB")
             img = transform(img)
             images[i] = img
 
-        images = torch.permute(images, (1,0,2,3))
+        images = torch.permute(images, (1, 0, 2, 3))
 
         return images
 
     def _get_audio(self, idx):
         # audio
-        spectrogram = pickle.load(open(self.audio[idx], 'rb'))
+        spectrogram = pickle.load(open(self.audio[idx], "rb"))
 
         return spectrogram
 
     def __getitem__(self, idx):
 
-
         images = self._get_images(idx)
         spectrogram = self._get_audio(idx)
         label = self.label[idx]
 
-        if self.mode=="test":
-            random_idx = random.randint(0, len(self.image)-1)
+        if self.mode == "test":
+            random_idx = random.randint(0, len(self.image) - 1)
             sh_images = self._get_images(random_idx)
             sh_spectrogram = self._get_audio(random_idx)
 
-            return {"data": {0:spectrogram, 1:images, "0_random_indistr": sh_spectrogram, "1_random_indistr": sh_images}, "label": label}
+            return {"data": {0: spectrogram, 1: images, "0_random_indistr": sh_spectrogram, "1_random_indistr": sh_images}, "label": label}
+
+        return {"data": {0: spectrogram, 1: images}, "label": label}
 
 
-        return {"data":{0:spectrogram, 1:images},"label": label}
-
-
-class AVE_Dataloader():
+class AVE_Dataloader:
 
     def __init__(self, config):
         """
@@ -144,39 +156,33 @@ class AVE_Dataloader():
 
         dataset_train, dataset_val, dataset_test, dataset_total = self._get_datasets()
 
-
         g = torch.Generator()
         g.manual_seed(0)
 
-        num_cores = len(os.sched_getaffinity(0))-1
+        num_cores = len(os.sched_getaffinity(0)) - 1
 
         print("Available cores {}".format(len(os.sched_getaffinity(0))))
         print("We are changing dataloader workers to num of cores {}".format(num_cores))
 
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset_train,
+            batch_size=self.config.training_params.batch_size,
+            num_workers=num_cores,
+            shuffle=True,
+            pin_memory=self.config.training_params.pin_memory,
+            generator=g,
+            worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id),
+        )
+        self.valid_loader = torch.utils.data.DataLoader(
+            dataset_val, batch_size=self.config.training_params.test_batch_size, shuffle=False, num_workers=num_cores, pin_memory=self.config.training_params.pin_memory
+        )
+        self.test_loader = torch.utils.data.DataLoader(
+            dataset_test, batch_size=self.config.training_params.test_batch_size, shuffle=False, num_workers=num_cores, pin_memory=self.config.training_params.pin_memory
+        )
 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train,
-                                                        batch_size=self.config.training_params.batch_size,
-                                                        num_workers=num_cores,
-                                                        shuffle=True,
-                                                        pin_memory=self.config.training_params.pin_memory,
-                                                        generator=g,
-                                                        worker_init_fn=lambda worker_id: np.random.seed(15 + worker_id))
-        self.valid_loader = torch.utils.data.DataLoader(dataset_val,
-                                                        batch_size=self.config.training_params.test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_cores,
-                                                        pin_memory=self.config.training_params.pin_memory)
-        self.test_loader = torch.utils.data.DataLoader(dataset_test,
-                                                       batch_size=self.config.training_params.test_batch_size,
-                                                       shuffle=False,
-                                                       num_workers=num_cores,
-                                                       pin_memory=self.config.training_params.pin_memory)
-
-        self.total_loader = torch.utils.data.DataLoader(dataset_total,
-                                                        batch_size=self.config.training_params.test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_cores,
-                                                       pin_memory=self.config.training_params.pin_memory)
+        self.total_loader = torch.utils.data.DataLoader(
+            dataset_total, batch_size=self.config.training_params.test_batch_size, shuffle=False, num_workers=num_cores, pin_memory=self.config.training_params.pin_memory
+        )
 
     def _get_datasets(self):
 
@@ -192,54 +198,71 @@ class AVEDataset_vit(Dataset):
     logger = logging.getLogger("AVE Dataset")
     logger.setLevel(logging.INFO)
 
-    def __init__(self, config, mode='train'):
+    def __init__(self, config, mode="train"):
         self.args = config
         self.image, self.audio, self.audio_wav, self.label = [], [], [], []
         self.mode = mode
-        self.num_frame = config.dataset.get("num_frame",4)
+        self.num_frame = config.dataset.get("num_frame", 4)
         self.norm_type = config.dataset.get("norm_type", False)
         self.data_root = self.args.dataset.data_roots
 
-        self.visual_feature_path = r'{}'.format(self.data_root)
-        self.audio_feature_path = r'{}/Audio-1004-SE'.format(self.data_root)
-        self.audiowav_feature_path = r'{}/Audios'.format(self.data_root)
+        self.visual_feature_path = r"{}".format(self.data_root)
+        self.audio_feature_path = r"{}/Audio-1004-SE".format(self.data_root)
+        self.audiowav_feature_path = r"{}/Audios".format(self.data_root)
 
         self.sampling_rate = config.dataset.get("sampling_rate", 16000)
         self.max_duration = config.dataset.get("max_duration", 10)
-        self.return_data = config.dataset.get("return_data", {"video": True, "spectrogram":True, "audio":False})
+        self.return_data = config.dataset.get("return_data", {"video": True, "spectrogram": True, "audio": False})
 
-        self.train_txt = './datasets/AVE/trainSet.txt'
-        self.test_txt = './datasets/AVE/testSet.txt'
-        self.val_txt = './datasets/AVE/valSet.txt'
+        self.train_txt = "./datasets/AVE/trainSet.txt"
+        self.test_txt = "./datasets/AVE/testSet.txt"
+        self.val_txt = "./datasets/AVE/valSet.txt"
 
-        if mode == 'train':
+        if mode == "train":
             txt_file = self.train_txt
-        elif mode == 'test':
+        elif mode == "test":
             txt_file = self.test_txt
         else:
             txt_file = self.val_txt
 
-        class_dict = {'Church bell': 0,
-                      'Male speech, man speaking': 1,
-                      'Bark': 2,
-                      'Fixed-wing aircraft, airplane': 3,
-                      'Race car, auto racing': 4,
-                      'Female speech, woman speaking': 5,
-                      'Helicopter': 6, 'Violin, fiddle': 7,
-                      'Flute': 8, 'Ukulele': 9, 'Frying (food)': 10,
-                      'Truck': 11, 'Shofar': 12, 'Motorcycle': 13, 'Acoustic guitar': 14,
-                      'Train horn': 15, 'Clock': 16, 'Banjo': 17, 'Goat': 18,
-                      'Baby cry, infant cry': 19, 'Bus': 20, 'Chainsaw': 21, 'Cat': 22,
-                      'Horse': 23, 'Toilet flush': 24, 'Rodents, rats, mice': 25, 'Accordion': 26,
-                      'Mandolin': 27}
+        class_dict = {
+            "Church bell": 0,
+            "Male speech, man speaking": 1,
+            "Bark": 2,
+            "Fixed-wing aircraft, airplane": 3,
+            "Race car, auto racing": 4,
+            "Female speech, woman speaking": 5,
+            "Helicopter": 6,
+            "Violin, fiddle": 7,
+            "Flute": 8,
+            "Ukulele": 9,
+            "Frying (food)": 10,
+            "Truck": 11,
+            "Shofar": 12,
+            "Motorcycle": 13,
+            "Acoustic guitar": 14,
+            "Train horn": 15,
+            "Clock": 16,
+            "Banjo": 17,
+            "Goat": 18,
+            "Baby cry, infant cry": 19,
+            "Bus": 20,
+            "Chainsaw": 21,
+            "Cat": 22,
+            "Horse": 23,
+            "Toilet flush": 24,
+            "Rodents, rats, mice": 25,
+            "Accordion": 26,
+            "Mandolin": 27,
+        }
 
-        with open(txt_file, 'r') as f2:
+        with open(txt_file, "r") as f2:
             files = f2.readlines()
             for item in files:
-                item = item.split('&')
-                audio_path = os.path.join(self.audio_feature_path, item[1] + '.pkl')
-                audio_path_wav = os.path.join(self.audiowav_feature_path, item[1] + '.wav')
-                visual_path = os.path.join(self.visual_feature_path, 'Image-{:02d}-FPS-SE'.format(self.args.dataset.fps), item[1])
+                item = item.split("&")
+                audio_path = os.path.join(self.audio_feature_path, item[1] + ".pkl")
+                audio_path_wav = os.path.join(self.audiowav_feature_path, item[1] + ".wav")
+                visual_path = os.path.join(self.visual_feature_path, "Image-{:02d}-FPS-SE".format(self.args.dataset.fps), item[1])
 
                 if self.return_data["spectrogram"]:
                     audio_flag = False
@@ -273,7 +296,7 @@ class AVEDataset_vit(Dataset):
         if self.args.dataset.get("norm_wav_path", False):
             self.wav_norm = pickle.loads(open(self.args.dataset.norm_wav_path, "rb").read())
         else:
-            if mode == 'train':
+            if mode == "train":
                 self.get_wav_normalizer()
                 raise Exception("Please run again the code, with config dataset.norm_wav_path equal to {}".format("./datasets/AVE/wav_norm.pkl"))
 
@@ -287,30 +310,31 @@ class AVEDataset_vit(Dataset):
 
     def _get_images(self, idx):
 
-        if not self.return_data["video"]: return False
+        if not self.return_data["video"]:
+            return False
 
-        if self.mode == 'train':
-            transform = transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
+        if self.mode == "train":
+            transform = transforms.Compose(
+                [
+                    transforms.RandomResizedCrop(224),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.ToTensor(),
+                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                ]
+            )
         else:
-            transform = transforms.Compose([
-                transforms.Resize(size=(224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
+            transform = transforms.Compose(
+                [transforms.Resize(size=(224, 224)), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+            )
 
         # Visual
         image_samples = os.listdir(self.image[idx])
         image_samples.sort()
 
-        images  = []
+        images = []
         for i in range(self.args.dataset.num_frame):
             if i < len(image_samples):
-                img = Image.open(os.path.join(self.image[idx], image_samples[i])).convert('RGB')
+                img = Image.open(os.path.join(self.image[idx], image_samples[i])).convert("RGB")
                 img = transform(img)
                 images.append(img)
 
@@ -323,21 +347,21 @@ class AVEDataset_vit(Dataset):
         wav_sum = 0
         wav_sqsum = 0
 
-        max_duration = 10 #seconds
+        max_duration = 10  # seconds
 
         for cur_wav in tqdm(self.audio_wav):
             audio, fps = torchaudio.load(cur_wav)
 
             audio = torchaudio.functional.resample(audio, fps, self.sampling_rate)
 
-            audio = audio[0][:self.sampling_rate*max_duration]
+            audio = audio[0][: self.sampling_rate * max_duration]
 
             wav_sum += torch.sum(audio)
-            wav_sqsum += torch.sum(audio ** 2)
+            wav_sqsum += torch.sum(audio**2)
             count += len(audio)
 
         wav_mean = wav_sum / count
-        wav_var = (wav_sqsum / count) - (wav_mean ** 2)
+        wav_var = (wav_sqsum / count) - (wav_mean**2)
         wav_std = np.sqrt(wav_var)
 
         self.wav_norm = {"mean": wav_mean, "std": wav_std}
@@ -347,7 +371,8 @@ class AVEDataset_vit(Dataset):
 
     def _get_audio(self, idx):
 
-        if not self.return_data["audio"]: return False
+        if not self.return_data["audio"]:
+            return False
 
         audio, fps = torchaudio.load(self.audio_wav[idx])
         audio = torchaudio.functional.resample(audio, fps, self.sampling_rate)
@@ -357,9 +382,10 @@ class AVEDataset_vit(Dataset):
 
     def _get_spectrogram(self, idx):
 
-        if not self.return_data["spectrogram"]: return False
+        if not self.return_data["spectrogram"]:
+            return False
         # audio
-        spectrogram = pickle.load(open(self.audio[idx], 'rb'))
+        spectrogram = pickle.load(open(self.audio[idx], "rb"))
 
         if self.norm_type == "per_sample":
             # Normalize per sample
@@ -372,7 +398,7 @@ class AVEDataset_vit(Dataset):
             std = np.array(self.norm_audio["per_req"]["std"])
             spectrogram = np.divide(spectrogram.T - mean, std + 1e-9).T
         elif self.norm_type == "total":
-            #Normalize per freq
+            # Normalize per freq
             mean = self.norm_audio["total"]["mean"]
             std = self.norm_audio["total"]["std"]
             spectrogram = np.divide(spectrogram - mean, std + 1e-9)
@@ -387,7 +413,8 @@ class AVEDataset_vit(Dataset):
         audio = self._get_audio(idx)
         label = self.label[idx]
 
-        return {"data":{0:spectrogram, 1:images, 2:audio} ,"label": label}
+        return {"data": {0: spectrogram, 1: images, 2: audio}, "label": label}
+
 
 def collate_fn_padd(batch):
 
@@ -398,13 +425,12 @@ def collate_fn_padd(batch):
             aggregated_batch[key] = torch.LongTensor([d[key] for d in batch])
 
     key = "data"
-    subkey = 0 #Spectrogram
+    subkey = 0  # Spectrogram
     aggregated_list = [d[key][subkey].unsqueeze(dim=0) for d in batch if d[key][subkey] is not False]
     if len(aggregated_list) > 0:
         aggregated_batch[key][subkey] = torch.cat(aggregated_list, dim=0)
 
-
-    subkey = 1 #Video
+    subkey = 1  # Video
     aggregated_list = [d[key][subkey].unsqueeze(dim=0) for d in batch if d[key][subkey] is not False]
 
     if len(aggregated_list) > 0:
@@ -417,7 +443,7 @@ def collate_fn_padd(batch):
         aggregated_batch[key][subkey] = torch.cat(aggregated_list, dim=0)
         aggregated_batch[key]["attention_mask_video"] = video_attention_mask
 
-    subkey = 2 #Audio
+    subkey = 2  # Audio
     aggregated_list = [d[key][subkey] for d in batch if d[key][subkey] is not False]
     if len(aggregated_list) > 0:
         length_list = [len(d) for d in aggregated_list]
@@ -430,7 +456,7 @@ def collate_fn_padd(batch):
     return aggregated_batch
 
 
-class AVE_Dataloader_vit():
+class AVE_Dataloader_vit:
 
     def __init__(self, config):
         """
@@ -440,40 +466,45 @@ class AVE_Dataloader_vit():
 
         dataset_train, dataset_val, dataset_test, dataset_total = self._get_datasets()
 
-
         g = torch.Generator()
         g.manual_seed(0)
-        num_cores = len(os.sched_getaffinity(0))-1
+        num_cores = len(os.sched_getaffinity(0)) - 1
         print("Available cores {}".format(len(os.sched_getaffinity(0))))
         print("We are changing dataloader workers to num of cores {}".format(num_cores))
 
         def seed_worker(worker_id):
-            worker_seed = torch.initial_seed() % 2 ** 32
+            worker_seed = torch.initial_seed() % 2**32
             np.random.seed(worker_seed)
             random.seed(worker_seed)
 
         dataset_train.logger.info("Train {}, Val {}, Test {}".format(len(dataset_train), len(dataset_val), len(dataset_test)))
 
-        self.train_loader = torch.utils.data.DataLoader(dataset_train,
-                                                        batch_size=self.config.training_params.batch_size,
-                                                        num_workers=num_cores,
-                                                        shuffle=True,
-                                                        pin_memory=self.config.training_params.pin_memory,
-                                                        generator=g,
-                                                        collate_fn=collate_fn_padd,
-                                                        worker_init_fn=seed_worker)
-        self.valid_loader = torch.utils.data.DataLoader(dataset_val,
-                                                        batch_size=self.config.training_params.test_batch_size,
-                                                        shuffle=False,
-                                                        num_workers=num_cores,
-                                                        collate_fn=collate_fn_padd,
-                                                        pin_memory=self.config.training_params.pin_memory)
-        self.test_loader = torch.utils.data.DataLoader(dataset_test,
-                                                       batch_size=self.config.training_params.test_batch_size,
-                                                       shuffle=False,
-                                                       num_workers=num_cores,
-                                                       collate_fn=collate_fn_padd,
-                                                       pin_memory=self.config.training_params.pin_memory)
+        self.train_loader = torch.utils.data.DataLoader(
+            dataset_train,
+            batch_size=self.config.training_params.batch_size,
+            num_workers=num_cores,
+            shuffle=True,
+            pin_memory=self.config.training_params.pin_memory,
+            generator=g,
+            collate_fn=collate_fn_padd,
+            worker_init_fn=seed_worker,
+        )
+        self.valid_loader = torch.utils.data.DataLoader(
+            dataset_val,
+            batch_size=self.config.training_params.test_batch_size,
+            shuffle=False,
+            num_workers=num_cores,
+            collate_fn=collate_fn_padd,
+            pin_memory=self.config.training_params.pin_memory,
+        )
+        self.test_loader = torch.utils.data.DataLoader(
+            dataset_test,
+            batch_size=self.config.training_params.test_batch_size,
+            shuffle=False,
+            num_workers=num_cores,
+            collate_fn=collate_fn_padd,
+            pin_memory=self.config.training_params.pin_memory,
+        )
 
     def _get_datasets(self):
 
@@ -483,5 +514,3 @@ class AVE_Dataloader_vit():
         total_dataset = AVEDataset_vit(config=self.config, mode="total")
 
         return train_dataset, valid_dataset, test_dataset, total_dataset
-
-

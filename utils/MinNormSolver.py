@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import math
 
+
 class MinNormSolver:
     MAX_ITER = 250
     STOP_CRIT = 1e-5
@@ -116,7 +117,7 @@ class MinNormSolver:
             new_dps[item] = dps[item].numpy()
 
         for item in init_sol:
-            if (torch.is_tensor(item)):
+            if torch.is_tensor(item):
                 data = item.numpy()
             else:
                 data = item
@@ -207,27 +208,27 @@ class MinNormSolver:
 
 def gradient_normalizers(grads, losses, normalization_type):
     gn = {}
-    if normalization_type == 'l2':
+    if normalization_type == "l2":
         for t in grads:
-            if (bool(grads[t])):
+            if bool(grads[t]):
                 gn[t] = np.sqrt(np.sum([grads[t][gr].pow(2).sum().data.cpu() for gr in grads[t]]))
             else:
                 continue
-    elif normalization_type == 'loss':
+    elif normalization_type == "loss":
         for t in grads:
-            if (bool(grads[t])):
+            if bool(grads[t]):
                 gn[t] = losses[t]
             else:
                 continue
-    elif normalization_type == 'loss+':
+    elif normalization_type == "loss+":
         for t in grads:
-            if (bool(grads[t])):
+            if bool(grads[t]):
                 gn[t] = losses[t] * np.sqrt(np.sum([grads[t][gr].pow(2).sum().data.cpu() for gr in grads[t]]))
             else:
                 continue
-    elif normalization_type == 'none':
+    elif normalization_type == "none":
         for t in grads:
             gn[t] = 1.0
     else:
-        print('ERROR: Invalid Normalization Type')
+        print("ERROR: Invalid Normalization Type")
     return gn

@@ -150,9 +150,7 @@ def get_cfg_defaults():
 
 def train_setup(description: str):
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        "--config_path", type=str, required=True, help="Path to the config file."
-    )
+    parser.add_argument("--config_path", type=str, required=True, help="Path to the config file.")
     parser.add_argument("--opts", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     cfg = get_cfg_defaults()
@@ -170,15 +168,10 @@ def train_setup(description: str):
     if accelerator.is_main_process:
         # If we have experiment already & not restarting --> Error!
         if os.path.exists(cfg.EXPERIMENT_PATH) and not cfg.WARM_RESTART:
-            raise ValueError(
-                f"{cfg.EXPERIMENT_PATH} exists & WARM_RESTART is False!\n"
-                f"Please delete {cfg.EXPERIMENT_PATH} and run again!"
-            )
+            raise ValueError(f"{cfg.EXPERIMENT_PATH} exists & WARM_RESTART is False!\n" f"Please delete {cfg.EXPERIMENT_PATH} and run again!")
         # If we are restarting, we have to have experiment!
         if cfg.WARM_RESTART:
-            assert os.path.exists(
-                cfg.EXPERIMENT_PATH
-            ), f"There is no {cfg.EXPERIMENT_PATH} to restart from!"
+            assert os.path.exists(cfg.EXPERIMENT_PATH), f"There is no {cfg.EXPERIMENT_PATH} to restart from!"
         else:
             # Otherwise, we create the experiment directory
             os.makedirs(cfg.EXPERIMENT_PATH, exist_ok=False)

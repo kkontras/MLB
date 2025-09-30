@@ -16,12 +16,8 @@ class ProtoDataset(Dataset):
     def __init__(self, cfg: CfgNode, train: bool = False):
         self.cfg = cfg
         self.train = train
-        self.dataset_name = (
-            cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
-        )
-        self.dataset_path = (
-            cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
-        )
+        self.dataset_name = cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
+        self.dataset_path = cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
         self.dataset_type = self.cfg.DATASET_TYPE
         self.create_dataset()
         self.sampler = get_sampler[self.cfg.MODEL_NAME](cfg=cfg, train=train)
@@ -29,9 +25,7 @@ class ProtoDataset(Dataset):
     def create_dataset(self):
         self.dataset = []
         if self.dataset_name == "something-something":
-            assert (
-                self.cfg.LABELS_PATH
-            ), "If something-something, path to labels required"
+            assert self.cfg.LABELS_PATH, "If something-something, path to labels required"
             self.dataset = json.load(open(self.dataset_path))
             self.labels = json.load(open(self.cfg.LABELS_PATH))
         elif self.dataset_name == "charades" or self.dataset_name == "charades-ego":
@@ -53,9 +47,7 @@ class ProtoDataset(Dataset):
             self.dataset = json.load(open(self.dataset_path))
         elif self.dataset_name == "EPIC-KITCHENS":
             # Flow: https://github.com/epic-kitchens/epic-kitchens-download-scripts/issues/17#issuecomment-1222288006
-            assert (
-                self.cfg.DATASET_VERSION == 55 or self.cfg.DATASET_VERSION == 100
-            ), "If EPIC-KITCHENS, dataset version must be provided (55 or 100)"
+            assert self.cfg.DATASET_VERSION == 55 or self.cfg.DATASET_VERSION == 100, "If EPIC-KITCHENS, dataset version must be provided (55 or 100)"
             if self.cfg.DATASET_VERSION == 55:
                 data_file = pickle.load(open(self.dataset_path, "rb"))
                 # FIXME: Removing two indices which are bad
@@ -100,11 +92,7 @@ class ProtoDataset(Dataset):
 
     def get_actions(self, sample) -> Dict[str, torch.Tensor]:
         if self.dataset_name == "something-something":
-            actions = {
-                "ACTION": torch.tensor(
-                    int(self.labels[re.sub("[\[\]]", "", sample["template"])])
-                )
-            }
+            actions = {"ACTION": torch.tensor(int(self.labels[re.sub("[\[\]]", "", sample["template"])]))}
         elif self.dataset_name == "charades" or self.dataset_name == "charades-ego":
             actions = torch.zeros(self.cfg.TOTAL_ACTIONS.ACTION, dtype=torch.float)
             actions[sample["ACTION"]] = 1.0
@@ -128,25 +116,15 @@ class ProtoDataset(Dataset):
 
     def open_resource(self):
         if self.dataset_type == "video":
-            self.resource = h5py.File(
-                self.cfg.VIDEOS_PATH, "r", libver="latest", swmr=True
-            )
+            self.resource = h5py.File(self.cfg.VIDEOS_PATH, "r", libver="latest", swmr=True)
         elif self.dataset_type == "flow":
-            self.resource = h5py.File(
-                self.cfg.FLOW_PATH, "r", libver="latest", swmr=True
-            )
+            self.resource = h5py.File(self.cfg.FLOW_PATH, "r", libver="latest", swmr=True)
         elif self.dataset_type == "audio":
-            self.resource = h5py.File(
-                self.cfg.AUDIO_PATH, "r", libver="latest", swmr=True
-            )
+            self.resource = h5py.File(self.cfg.AUDIO_PATH, "r", libver="latest", swmr=True)
         elif self.dataset_type == "segmentation":
-            self.resource = h5py.File(
-                self.cfg.SEGMENTATION_PATH, "r", libver="latest", swmr=True
-            )
+            self.resource = h5py.File(self.cfg.SEGMENTATION_PATH, "r", libver="latest", swmr=True)
         else:
-            raise ValueError(
-                f"{self.dataset_type} cannot load anything with this dataset!"
-            )
+            raise ValueError(f"{self.dataset_type} cannot load anything with this dataset!")
 
     def get_video_length(self, sample):
         # EPIC (covers audio too - hack)

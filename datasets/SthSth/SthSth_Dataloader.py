@@ -27,9 +27,7 @@ class VideoFlow(Dataset):
     def __getitem__(self, idx: int):
         flow_dict = self.flow_dataset[idx]
         self.video_dataset.set_indices(flow_dict["indices"])
-        self.video_dataset.set_existing_transforms(
-            self.flow_dataset.enforced_transforms
-        )
+        self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
         video_dict = self.video_dataset[idx]
         # Gather from both dicts
         output = {}
@@ -112,9 +110,7 @@ class VideoFlowAudio(Dataset):
         self.flow_dataset.set_indices(audio_dict["indices"])
         flow_dict = self.flow_dataset[idx]
         self.video_dataset.set_indices(audio_dict["indices"])
-        self.video_dataset.set_existing_transforms(
-            self.flow_dataset.enforced_transforms
-        )
+        self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
         video_dict = self.video_dataset[idx]
         # Gather from both dicts
         output = {}
@@ -176,9 +172,7 @@ class VideoLayoutFlow(Dataset):
     def __getitem__(self, idx: int):
         flow_dict = self.flow_dataset[idx]
         self.video_dataset.set_indices(flow_dict["indices"])
-        self.video_dataset.set_existing_transforms(
-            self.flow_dataset.enforced_transforms
-        )
+        self.video_dataset.set_existing_transforms(self.flow_dataset.enforced_transforms)
         video_dict = self.video_dataset[idx]
         self.layout_dataset.set_indices(flow_dict["indices"])
         layout_dict = self.layout_dataset[idx]

@@ -53,7 +53,7 @@ def pick_bias_infuser(agent):
     return bi
 
 
-class General_Bias_Infusion():
+class General_Bias_Infusion:
     def __init__(self, agent):
         self.agent = agent
 
@@ -70,6 +70,7 @@ class General_Bias_Infusion():
 
     def plot_bias(self, **kwargs):
         pass
+
 
 class Bias_Infusion_OGM(General_Bias_Infusion):
     def __init__(self, agent):
@@ -100,12 +101,10 @@ class Bias_Infusion_OGM(General_Bias_Infusion):
         ratio_1 = 1 / ratio_0
 
         if ratio_0 > 1:
-            coeff_0 = 1 - self.tanh(
-                self.agent.config.model.args.bias_infusion.alpha * self.relu(ratio_0)).cpu().numpy()
+            coeff_0 = 1 - self.tanh(self.agent.config.model.args.bias_infusion.alpha * self.relu(ratio_0)).cpu().numpy()
             coeff_1 = 1
         else:
-            coeff_1 = 1 - self.tanh(
-                self.agent.config.model.args.bias_infusion.alpha * self.relu(ratio_1)).cpu().numpy()
+            coeff_1 = 1 - self.tanh(self.agent.config.model.args.bias_infusion.alpha * self.relu(ratio_1)).cpu().numpy()
             coeff_0 = 1
 
         self.agent.logs["ratio_logs"]["ratio_mod1"].append(ratio_1.cpu().numpy())
@@ -113,41 +112,36 @@ class Bias_Infusion_OGM(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_mod0"].append(coeff_0)
         self.agent.logs["ratio_logs"]["coeff_mod1"].append(coeff_1)
 
-        wandb_output = {
-            "ratio": {"ratio_mod1": ratio_1.cpu().numpy(),
-                      "ratio_mod0": ratio_0.cpu().numpy(),
-                      "coeff_mod0": coeff_0,
-                      "coeff_mod1": coeff_1}
-        }
+        wandb_output = {"ratio": {"ratio_mod1": ratio_1.cpu().numpy(), "ratio_mod0": ratio_0.cpu().numpy(), "coeff_mod0": coeff_0, "coeff_mod1": coeff_1}}
 
         wandb.log(wandb_output)
 
         self._equalize_gradients(coeff_0=coeff_0, coeff_1=coeff_1)
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name:
-                    if self.agent.config.model.args.bias_infusion.method == 'OGM_GE':  # bug fixed
-                        parms.grad = parms.grad * coeff_0 + torch.zeros_like(parms.grad).normal_(0,
-                                                                                                 parms.grad.std().item() + 1e-8)
-                    elif self.agent.config.model.args.bias_infusion.method == 'OGM':
+                    if self.agent.config.model.args.bias_infusion.method == "OGM_GE":  # bug fixed
+                        parms.grad = parms.grad * coeff_0 + torch.zeros_like(parms.grad).normal_(0, parms.grad.std().item() + 1e-8)
+                    elif self.agent.config.model.args.bias_infusion.method == "OGM":
                         parms.grad *= coeff_0
-                    elif self.agent.config.model.args.bias_infusion.method == 'Acc':
+                    elif self.agent.config.model.args.bias_infusion.method == "Acc":
                         parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name:
-                    if self.agent.config.model.args.bias_infusion.method == 'OGM_GE':  # bug fixed
-                        parms.grad = parms.grad * coeff_1 + torch.zeros_like(parms.grad).normal_(0,
-                                                                                                 parms.grad.std().item() + 1e-8)
-                    elif self.agent.config.model.args.bias_infusion.method == 'OGM':
+                    if self.agent.config.model.args.bias_infusion.method == "OGM_GE":  # bug fixed
+                        parms.grad = parms.grad * coeff_1 + torch.zeros_like(parms.grad).normal_(0, parms.grad.std().item() + 1e-8)
+                    elif self.agent.config.model.args.bias_infusion.method == "OGM":
                         parms.grad *= coeff_1
-                    elif self.agent.config.model.args.bias_infusion.method == 'Acc':
+                    elif self.agent.config.model.args.bias_infusion.method == "Acc":
                         parms.grad *= coeff_1
+
 
 class Bias_Infusion_MMPareto(General_Bias_Infusion):
     def __init__(self, agent):
@@ -157,19 +151,19 @@ class Bias_Infusion_MMPareto(General_Bias_Infusion):
 
     def _initialize_logs_n_utils(self):
         pass
-    
-    def before_backward(self, total, output_losses, **kwargs):
-        if not self.agent.config.model.args.bias_infusion.use: return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+    def before_backward(self, total, output_losses, **kwargs):
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
+
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             loss_mm = output_losses["ce_loss_combined"]
             loss_a = output_losses["ce_loss_c"]
             loss_v = output_losses["ce_loss_g"]
 
             losses = [loss_mm, loss_a, loss_v]
-            all_loss = ['both', 'audio', 'visual']
+            all_loss = ["both", "audio", "visual"]
 
             grads_visual = defaultdict(dict)
             grads_audio = defaultdict(dict)
@@ -177,43 +171,54 @@ class Bias_Infusion_MMPareto(General_Bias_Infusion):
             for idx, loss_type in enumerate(all_loss):
                 loss = losses[idx]
                 loss.backward(retain_graph=True)
-                if (loss_type == 'visual'):
+                if loss_type == "visual":
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
+                        if parms.grad is None:
+                            continue
                         if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual["both"]:
                             grads_visual[loss_type][name] = parms.grad.data.clone()
                     grads_visual[loss_type]["concat"] = torch.cat(
-                        [grads_visual[loss_type][name].flatten()
-                         for name, parms in self.agent.model.named_parameters()
-                         if ("mod1" in name or "enc_1" in name)
-                         and parms.grad is not None
-                         and name in grads_visual["both"]])
-                elif (loss_type == 'audio'):
+                        [
+                            grads_visual[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod1" in name or "enc_1" in name) and parms.grad is not None and name in grads_visual["both"]
+                        ]
+                    )
+                elif loss_type == "audio":
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
+                        if parms.grad is None:
+                            continue
                         if ("mod0" in name or "enc_0" in name) and name in grads_audio["both"]:
                             grads_audio[loss_type][name] = parms.grad.data.clone()
                     grads_audio[loss_type]["concat"] = torch.cat(
-                        [grads_audio[loss_type][name].flatten()
-                         for name, parms in self.agent.model.named_parameters()
-                         if ("mod0" in name or "enc_0" in name)
-                         and parms.grad is not None
-                         and name in grads_audio["both"]])
+                        [
+                            grads_audio[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod0" in name or "enc_0" in name) and parms.grad is not None and name in grads_audio["both"]
+                        ]
+                    )
                 else:
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
+                        if parms.grad is None:
+                            continue
                         if "mod0" in name or "enc_0" in name:
                             grads_audio[loss_type][name] = parms.grad.data.clone()
                         if "mod1" in name or "enc_1" in name:
                             grads_visual[loss_type][name] = parms.grad.data.clone()
                     grads_visual[loss_type]["concat"] = torch.cat(
-                        [grads_visual[loss_type][name].flatten() for name, parms in
-                         self.agent.model.named_parameters() if
-                         ("mod1" in name or "enc_1" in name) and parms.grad is not None])
+                        [
+                            grads_visual[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod1" in name or "enc_1" in name) and parms.grad is not None
+                        ]
+                    )
                     grads_audio[loss_type]["concat"] = torch.cat(
-                        [grads_audio[loss_type][name].flatten() for name, parms in
-                         self.agent.model.named_parameters() if
-                         ("mod0" in name or "enc_0" in name) and parms.grad is not None])
+                        [
+                            grads_audio[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod0" in name or "enc_0" in name) and parms.grad is not None
+                        ]
+                    )
                 self.agent.optimizer.zero_grad()
 
             audio_k, visual_k = self._compute_ratio(grads_audio, grads_visual)
@@ -230,54 +235,51 @@ class Bias_Infusion_MMPareto(General_Bias_Infusion):
             return total, output_losses, True
 
     def _compute_ratio(self, grads_audio, grads_visual):
-        this_cos_audio = F.cosine_similarity(grads_audio['both']["concat"], grads_audio['audio']["concat"], dim=0)
-        this_cos_visual = F.cosine_similarity(grads_visual['both']["concat"], grads_visual['visual']["concat"], dim=0)
+        this_cos_audio = F.cosine_similarity(grads_audio["both"]["concat"], grads_audio["audio"]["concat"], dim=0)
+        this_cos_visual = F.cosine_similarity(grads_visual["both"]["concat"], grads_visual["visual"]["concat"], dim=0)
 
-        audio_task = ['both', 'audio']
-        visual_task = ['both', 'visual']
-        
+        audio_task = ["both", "audio"]
+        visual_task = ["both", "visual"]
+
         audio_k = [0, 0]
         visual_k = [0, 0]
 
-        if (this_cos_audio > 0):
+        if this_cos_audio > 0:
             audio_k[0] = 0.5
             audio_k[1] = 0.5
         else:
-            audio_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_audio[t].values()) for t in audio_task])
-        if (this_cos_visual > 0):
+            audio_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_audio[t].values()) for t in audio_task])
+        if this_cos_visual > 0:
             visual_k[0] = 0.5
             visual_k[1] = 0.5
         else:
-            visual_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_visual[t].values()) for t in visual_task])
+            visual_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_visual[t].values()) for t in visual_task])
         return audio_k, visual_k
 
     def _equalize_gradients(self, grads_audio, grads_visual, audio_k, visual_k, gamma):
         for name, param in self.agent.model.named_parameters():
             if param.grad is not None:
-                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio['both']:
+                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * audio_k[0] * grads_audio['both'][name] + 2 * audio_k[1] * \
-                               grads_audio['audio'][
-                                   name]
+                    new_grad = 2 * audio_k[0] * grads_audio["both"][name] + 2 * audio_k[1] * grads_audio["audio"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
 
-                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual['both']:
+                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * visual_k[0] * grads_visual['both'][name] + 2 * visual_k[1] * \
-                               grads_visual['visual'][name]
+                    new_grad = 2 * visual_k[0] * grads_visual["both"][name] + 2 * visual_k[1] * grads_visual["visual"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
+
+
 class Bias_Infusion_MMPareto_3d(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MMPareto_3d, self).__init__(agent)
@@ -286,12 +288,12 @@ class Bias_Infusion_MMPareto_3d(General_Bias_Infusion):
 
     def _initialize_logs_n_utils(self):
         pass
-    
-    def before_backward(self, total, output_losses, **kwargs):
-        if not self.agent.config.model.args.bias_infusion.use: return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+    def before_backward(self, total, output_losses, **kwargs):
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
+
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             loss_mm = output_losses["ce_loss_combined"]
             loss_a = output_losses["ce_loss_c"]
@@ -299,7 +301,7 @@ class Bias_Infusion_MMPareto_3d(General_Bias_Infusion):
             loss_t = output_losses["ce_loss_f"]
 
             losses = [loss_mm, loss_a, loss_v, loss_t]
-            all_loss = ['both', 'audio', 'visual', 'text']
+            all_loss = ["both", "audio", "visual", "text"]
 
             grads_visual = defaultdict(dict)
             grads_audio = defaultdict(dict)
@@ -308,59 +310,72 @@ class Bias_Infusion_MMPareto_3d(General_Bias_Infusion):
             for idx, loss_type in enumerate(all_loss):
                 loss = losses[idx]
                 loss.backward(retain_graph=True)
-                if (loss_type == 'visual'):
+                if loss_type == "visual":
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
-                        if ("mod1" in name  or "enc_1" in name or "fc_lin_1" in name) and name in grads_visual["both"]:
+                        if parms.grad is None:
+                            continue
+                        if ("mod1" in name or "enc_1" in name or "fc_lin_1" in name) and name in grads_visual["both"]:
                             grads_visual[loss_type][name] = parms.grad.data.clone()
                     grads_visual[loss_type]["concat"] = torch.cat(
-                        [grads_visual[loss_type][name].flatten()
-                         for name, parms in self.agent.model.named_parameters()
-                         if ("mod1" in name  or "enc_1" in name or "fc_lin_1" in name)
-                         and parms.grad is not None
-                         and name in grads_visual["both"]])
-                elif (loss_type == 'audio'):
+                        [
+                            grads_visual[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod1" in name or "enc_1" in name or "fc_lin_1" in name) and parms.grad is not None and name in grads_visual["both"]
+                        ]
+                    )
+                elif loss_type == "audio":
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
-                        if ("mod0" in name  or "enc_0" in name or "fc_lin_0" in name) and name in grads_audio["both"]:
+                        if parms.grad is None:
+                            continue
+                        if ("mod0" in name or "enc_0" in name or "fc_lin_0" in name) and name in grads_audio["both"]:
                             grads_audio[loss_type][name] = parms.grad.data.clone()
                     grads_audio[loss_type]["concat"] = torch.cat(
-                        [grads_audio[loss_type][name].flatten()
-                         for name, parms in self.agent.model.named_parameters()
-                         if ("mod0" in name  or "enc_0" in name or "fc_lin_0" in name)
-                         and parms.grad is not None
-                         and name in grads_audio["both"]])
-                elif (loss_type == 'text'):
+                        [
+                            grads_audio[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod0" in name or "enc_0" in name or "fc_lin_0" in name) and parms.grad is not None and name in grads_audio["both"]
+                        ]
+                    )
+                elif loss_type == "text":
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
-                        if ("mod2" in name  or "enc_2" in name or "fc_lin_2" in name) and name in grads_text["both"]:
+                        if parms.grad is None:
+                            continue
+                        if ("mod2" in name or "enc_2" in name or "fc_lin_2" in name) and name in grads_text["both"]:
                             grads_text[loss_type][name] = parms.grad.data.clone()
                     grads_text[loss_type]["concat"] = torch.cat(
-                        [grads_text[loss_type][name].flatten()
-                         for name, parms in self.agent.model.named_parameters()
-                         if ("mod2" in name  or "enc_2" in name or "fc_lin_2" in name)
-                         and parms.grad is not None
-                         and name in grads_text["both"]])
+                        [
+                            grads_text[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod2" in name or "enc_2" in name or "fc_lin_2" in name) and parms.grad is not None and name in grads_text["both"]
+                        ]
+                    )
                 else:
                     for name, parms in self.agent.model.named_parameters():
-                        if parms.grad is None: continue
-                        if "mod0" in name  or "enc_0" in name or "fc_lin_0" in name:
+                        if parms.grad is None:
+                            continue
+                        if "mod0" in name or "enc_0" in name or "fc_lin_0" in name:
                             grads_audio[loss_type][name] = parms.grad.data.clone()
-                        if "mod1" in name  or "enc_1" in name or "fc_lin_1" in name:
+                        if "mod1" in name or "enc_1" in name or "fc_lin_1" in name:
                             grads_visual[loss_type][name] = parms.grad.data.clone()
-                        if "mod2" in name  or "enc_2" in name or "fc_lin_2" in name:
+                        if "mod2" in name or "enc_2" in name or "fc_lin_2" in name:
                             grads_text[loss_type][name] = parms.grad.data.clone()
                     grads_visual[loss_type]["concat"] = torch.cat(
-                        [grads_visual[loss_type][name].flatten() for name, parms in
-                         self.agent.model.named_parameters() if
-                         ("mod1" in name  or "enc_1" in name or "fc_lin_1" in name) and parms.grad is not None])
+                        [
+                            grads_visual[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod1" in name or "enc_1" in name or "fc_lin_1" in name) and parms.grad is not None
+                        ]
+                    )
                     grads_audio[loss_type]["concat"] = torch.cat(
-                        [grads_audio[loss_type][name].flatten() for name, parms in
-                         self.agent.model.named_parameters() if
-                         ("mod0" in name  or "enc_0" in name or "fc_lin_0" in name) and parms.grad is not None])
+                        [
+                            grads_audio[loss_type][name].flatten()
+                            for name, parms in self.agent.model.named_parameters()
+                            if ("mod0" in name or "enc_0" in name or "fc_lin_0" in name) and parms.grad is not None
+                        ]
+                    )
                     aggr_list = []
                     for name, parms in self.agent.model.named_parameters():
-                        if ("mod2" in name  or "enc_2" in name or "fc_lin_2" in name) and parms.grad is not None:
+                        if ("mod2" in name or "enc_2" in name or "fc_lin_2" in name) and parms.grad is not None:
                             aggr_list.append(grads_text[loss_type][name].flatten())
                     grads_text[loss_type]["concat"] = torch.cat(aggr_list)
                 self.agent.optimizer.zero_grad()
@@ -380,54 +395,50 @@ class Bias_Infusion_MMPareto_3d(General_Bias_Infusion):
             return total, output_losses, True
 
     def _compute_ratio(self, grads_audio, grads_visual):
-        this_cos_audio = F.cosine_similarity(grads_audio['both']["concat"], grads_audio['audio']["concat"], dim=0)
-        this_cos_visual = F.cosine_similarity(grads_visual['both']["concat"], grads_visual['visual']["concat"], dim=0)
+        this_cos_audio = F.cosine_similarity(grads_audio["both"]["concat"], grads_audio["audio"]["concat"], dim=0)
+        this_cos_visual = F.cosine_similarity(grads_visual["both"]["concat"], grads_visual["visual"]["concat"], dim=0)
 
-        audio_task = ['both', 'audio']
-        visual_task = ['both', 'visual']
+        audio_task = ["both", "audio"]
+        visual_task = ["both", "visual"]
 
         audio_k = [0, 0]
         visual_k = [0, 0]
 
-        if (this_cos_audio > 0):
+        if this_cos_audio > 0:
             audio_k[0] = 0.5
             audio_k[1] = 0.5
         else:
-            audio_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_audio[t].values()) for t in audio_task])
-        if (this_cos_visual > 0):
+            audio_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_audio[t].values()) for t in audio_task])
+        if this_cos_visual > 0:
             visual_k[0] = 0.5
             visual_k[1] = 0.5
         else:
-            visual_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_visual[t].values()) for t in visual_task])
+            visual_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_visual[t].values()) for t in visual_task])
         return audio_k, visual_k
 
     def _equalize_gradients(self, grads_audio, grads_visual, audio_k, visual_k, gamma):
         for name, param in self.agent.model.named_parameters():
             if param.grad is not None:
-                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio['both']:
+                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * audio_k[0] * grads_audio['both'][name] + 2 * audio_k[1] * \
-                               grads_audio['audio'][
-                                   name]
+                    new_grad = 2 * audio_k[0] * grads_audio["both"][name] + 2 * audio_k[1] * grads_audio["audio"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
 
-                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual['both']:
+                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * visual_k[0] * grads_visual['both'][name] + 2 * visual_k[1] * \
-                               grads_visual['visual'][name]
+                    new_grad = 2 * visual_k[0] * grads_visual["both"][name] + 2 * visual_k[1] * grads_visual["visual"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
+
 
 class Bias_Infusion_ReconBoost(General_Bias_Infusion):
     def __init__(self, agent):
@@ -452,14 +463,16 @@ class Bias_Infusion_ReconBoost(General_Bias_Infusion):
             return 1  # Last phase of the cycle
 
     def before_backward(self, total, output_losses, **kwargs):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             target = torch.zeros(kwargs["output"]["preds"]["c"].shape[0], self.agent.config.model.args.num_classes).cuda().scatter_(1, kwargs["label"].view(-1, 1), 1)
 
-            stages = self.get_stage(self.agent.logs["current_epoch"], self.agent.config.model.args.bias_infusion.epoch_stages, self.agent.config.model.args.bias_infusion.ensemble_stages)
+            stages = self.get_stage(
+                self.agent.logs["current_epoch"], self.agent.config.model.args.bias_infusion.epoch_stages, self.agent.config.model.args.bias_infusion.ensemble_stages
+            )
 
             if stages == 0 or stages == 2:
                 modality = stages // 2
@@ -470,8 +483,9 @@ class Bias_Infusion_ReconBoost(General_Bias_Infusion):
                     out_obj = kwargs["output"]["preds"]["g"]
                 out_join = kwargs["output"]["preds"]["combined"]
 
-                boosting_loss = - self.agent.config.model.args.bias_infusion.weight1 * (target * out_obj.log_softmax(1)).mean(-1) \
-                                + self.agent.config.model.args.bias_infusion.weight2 * (target * out_join.detach().softmax(1) * out_obj.log_softmax(1)).mean(-1)
+                boosting_loss = -self.agent.config.model.args.bias_infusion.weight1 * (target * out_obj.log_softmax(1)).mean(
+                    -1
+                ) + self.agent.config.model.args.bias_infusion.weight2 * (target * out_join.detach().softmax(1) * out_obj.log_softmax(1)).mean(-1)
 
                 for name, param in self.agent.model.named_parameters():
                     if modality == 0 and ("mod1" in name or "fc_1" in name or "enc_1" in name):
@@ -480,10 +494,10 @@ class Bias_Infusion_ReconBoost(General_Bias_Infusion):
                         param.requires_grad = False
 
                 self.agent.model.zero_grad()
-                #disable the gradient of the other modalities
+                # disable the gradient of the other modalities
 
                 if self.agent.config.model.args.bias_infusion.use_ga:
-                    if self.agent.logs["current_epoch"]//self.agent.config.model.args.bias_infusion.epoch_stages == 0:
+                    if self.agent.logs["current_epoch"] // self.agent.config.model.args.bias_infusion.epoch_stages == 0:
                         loss = boosting_loss
                     else:
                         if modality == 0:
@@ -513,54 +527,50 @@ class Bias_Infusion_ReconBoost(General_Bias_Infusion):
             return total, output_losses, True
 
     def _compute_ratio(self, grads_audio, grads_visual):
-        this_cos_audio = F.cosine_similarity(grads_audio['both']["concat"], grads_audio['audio']["concat"], dim=0)
-        this_cos_visual = F.cosine_similarity(grads_visual['both']["concat"], grads_visual['visual']["concat"], dim=0)
+        this_cos_audio = F.cosine_similarity(grads_audio["both"]["concat"], grads_audio["audio"]["concat"], dim=0)
+        this_cos_visual = F.cosine_similarity(grads_visual["both"]["concat"], grads_visual["visual"]["concat"], dim=0)
 
-        audio_task = ['both', 'audio']
-        visual_task = ['both', 'visual']
+        audio_task = ["both", "audio"]
+        visual_task = ["both", "visual"]
 
         audio_k = [0, 0]
         visual_k = [0, 0]
 
-        if (this_cos_audio > 0):
+        if this_cos_audio > 0:
             audio_k[0] = 0.5
             audio_k[1] = 0.5
         else:
-            audio_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_audio[t].values()) for t in audio_task])
-        if (this_cos_visual > 0):
+            audio_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_audio[t].values()) for t in audio_task])
+        if this_cos_visual > 0:
             visual_k[0] = 0.5
             visual_k[1] = 0.5
         else:
-            visual_k, min_norm = MinNormSolver.find_min_norm_element(
-                [list(grads_visual[t].values()) for t in visual_task])
+            visual_k, min_norm = MinNormSolver.find_min_norm_element([list(grads_visual[t].values()) for t in visual_task])
         return audio_k, visual_k
 
     def _equalize_gradients(self, grads_audio, grads_visual, audio_k, visual_k, gamma):
         for name, param in self.agent.model.named_parameters():
             if param.grad is not None:
-                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio['both']:
+                if ("mod0" in name or "fc_0" in name or "enc_0" in name) and name in grads_audio["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * audio_k[0] * grads_audio['both'][name] + 2 * audio_k[1] * \
-                               grads_audio['audio'][
-                                   name]
+                    new_grad = 2 * audio_k[0] * grads_audio["both"][name] + 2 * audio_k[1] * grads_audio["audio"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
 
-                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual['both']:
+                if ("mod1" in name or "fc_1" in name or "enc_1" in name) and name in grads_visual["both"]:
                     three_norm = torch.norm(param.grad.data.clone())
-                    new_grad = 2 * visual_k[0] * grads_visual['both'][name] + 2 * visual_k[1] * \
-                               grads_visual['visual'][name]
+                    new_grad = 2 * visual_k[0] * grads_visual["both"][name] + 2 * visual_k[1] * grads_visual["visual"][name]
                     new_norm = torch.norm(new_grad)
                     diff = three_norm / new_norm
-                    if (diff > 1):
+                    if diff > 1:
                         param.grad = diff * new_grad * gamma
                     else:
                         param.grad = new_grad * gamma
+
 
 class Bias_Infusion_MLB(General_Bias_Infusion):
     def __init__(self, agent):
@@ -590,7 +600,7 @@ class Bias_Infusion_MLB(General_Bias_Infusion):
 
         def js_divergence(net_1_logits, net_2_logits):
 
-            clip_value = 1e+7
+            clip_value = 1e7
 
             net_1_probs = F.softmax(torch.clamp(net_1_logits, -clip_value, clip_value), dim=1)
             net_2_probs = F.softmax(torch.clamp(net_2_logits, -clip_value, clip_value), dim=1)
@@ -617,18 +627,16 @@ class Bias_Infusion_MLB(General_Bias_Infusion):
                 print("net_2_probs: ", net_2_probs)
 
                 raise Exception("NaN detected in loss computation")
-            return (0.5 * loss)
+            return 0.5 * loss
 
         out_color, out_gray = preds["c"], preds["g"]
         if len(label.shape) > 1:
             label = label.flatten()
 
-        score_0 = torch.mean(
-            torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
-        score_1 = torch.mean(
-            torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
+        score_0 = torch.mean(torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
+        score_1 = torch.mean(torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
 
-        if self.tanh_mode == "2_jsd" or self.tanh_mode == "1_jsd" :
+        if self.tanh_mode == "2_jsd" or self.tanh_mode == "1_jsd":
 
             score_0 = js_divergence(out_color, preds["combined"]).detach()
             score_1 = js_divergence(out_gray, preds["combined"]).detach()
@@ -688,29 +696,27 @@ class Bias_Infusion_MLB(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_audio"].append(coeff_0.cpu().numpy())
         self.agent.logs["ratio_logs"]["coeff_video"].append(coeff_1.cpu().numpy())
 
-        wandb_output = {
-            "ratio": {"ratio_0": ratio_0.cpu().numpy(),
-                      "ratio_1": ratio_1.cpu().numpy(),
-                      "coeff_0": coeff_0.cpu().numpy(),
-                      "coeff_1": coeff_1.cpu().numpy()}
-        }
+        wandb_output = {"ratio": {"ratio_0": ratio_0.cpu().numpy(), "ratio_1": ratio_1.cpu().numpy(), "coeff_0": coeff_0.cpu().numpy(), "coeff_1": coeff_1.cpu().numpy()}}
 
         wandb.log(wandb_output)
 
         self._equalize_gradients(coeff_0=coeff_0, coeff_1=coeff_1)
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
                     parms.grad *= coeff_1
+
+
 class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MLB_Shap, self).__init__(agent)
@@ -747,7 +753,7 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
     def on_backward_end(self, label, preds):
         def js_divergence(net_1_logits, net_2_logits):
 
-            clip_value = 1e+7
+            clip_value = 1e7
 
             net_1_probs = F.softmax(torch.clamp(net_1_logits, -clip_value, clip_value), dim=1)
             net_2_probs = F.softmax(torch.clamp(net_2_logits, -clip_value, clip_value), dim=1)
@@ -766,7 +772,7 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
             loss += F.kl_div(total_m, net_2_probs, reduction="batchmean")
             if torch.isnan(loss):
                 raise Exception("NaN detected in loss computation")
-            return (0.5 * loss)
+            return 0.5 * loss
 
         if len(label.shape) > 1:
             label = label.flatten()
@@ -783,10 +789,8 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
             shap_value_0 = 0.5 * (preds["combined"] - preds["sa"] + preds["sv"] - preds["sav"])
             shap_value_1 = 0.5 * (preds["combined"] + preds["sa"] - preds["sv"] - preds["sav"])
 
-            score_0 = torch.mean(
-                torch.stack([self.softmax(shap_value_0)[i][label[i]] for i in range(shap_value_0.size(0))])).detach()
-            score_1 = torch.mean(
-                torch.stack([self.softmax(shap_value_1)[i][label[i]] for i in range(shap_value_1.size(0))])).detach()
+            score_0 = torch.mean(torch.stack([self.softmax(shap_value_0)[i][label[i]] for i in range(shap_value_0.size(0))])).detach()
+            score_1 = torch.mean(torch.stack([self.softmax(shap_value_1)[i][label[i]] for i in range(shap_value_1.size(0))])).detach()
 
         elif self.balance_mode == "perm":
             shap_value_0 = 0.5 * (preds["ncombined"] - preds["sa"] + preds["sv"])  # - preds["sav"])
@@ -801,12 +805,8 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
             shap_value_1 = 0.5 * (preds["ncombined"] + preds["sa"] - preds["sv"] - preds["sav"])  # )
 
             # Compare as per loss using the target
-            score_0 = torch.mean(
-                torch.stack(
-                    [self.softmax(shap_value_0)[i][preds["n_label"][i]] for i in range(shap_value_0.size(0))])).detach()
-            score_1 = torch.mean(
-                torch.stack(
-                    [self.softmax(shap_value_1)[i][preds["n_label"][i]] for i in range(shap_value_1.size(0))])).detach()
+            score_0 = torch.mean(torch.stack([self.softmax(shap_value_0)[i][preds["n_label"][i]] for i in range(shap_value_0.size(0))])).detach()
+            score_1 = torch.mean(torch.stack([self.softmax(shap_value_1)[i][preds["n_label"][i]] for i in range(shap_value_1.size(0))])).detach()
 
         ratio_0 = score_1 / score_0
         ratio_1 = 1 / ratio_0
@@ -828,16 +828,18 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_video"].append(coeff_1.cpu().numpy())
 
         wandb_output = {
-            "ratio": {"ratio_0": ratio_0.cpu().numpy(),
-                      "ratio_1": ratio_1.cpu().numpy(),
-                      "score_0": score_0.cpu().numpy(),
-                      "score_1": score_1.cpu().numpy(),
-                      # "scoreperf_shap0": scoreperf_shap0.cpu().numpy(),
-                      # "scoreperf_shap1": scoreperf_shap1.cpu().numpy(),
-                      # "scoreperf_0": scoreperf_0.cpu().numpy(),
-                      # "scoreperf_1": scoreperf_1.cpu().numpy(),
-                      "coeff_0": coeff_0.cpu().numpy(),
-                      "coeff_1": coeff_1.cpu().numpy()}
+            "ratio": {
+                "ratio_0": ratio_0.cpu().numpy(),
+                "ratio_1": ratio_1.cpu().numpy(),
+                "score_0": score_0.cpu().numpy(),
+                "score_1": score_1.cpu().numpy(),
+                # "scoreperf_shap0": scoreperf_shap0.cpu().numpy(),
+                # "scoreperf_shap1": scoreperf_shap1.cpu().numpy(),
+                # "scoreperf_0": scoreperf_0.cpu().numpy(),
+                # "scoreperf_1": scoreperf_1.cpu().numpy(),
+                "coeff_0": coeff_0.cpu().numpy(),
+                "coeff_1": coeff_1.cpu().numpy(),
+            }
         }
 
         wandb.log(wandb_output)
@@ -850,13 +852,14 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
         #     self.agent.optimizer.step()
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
@@ -871,15 +874,14 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
 
         def compute_coeff(loss_name):
             list_val = list(self.agent.logs["val_logs"].keys())
-            if len(list_val) < 2: return 1, 1, 1
+            if len(list_val) < 2:
+                return 1, 1, 1
             train_loss = self.agent.logs["train_logs"][list_val[-1]]["loss"][loss_name]
             val_loss = self.agent.logs["val_logs"][list_val[-1]]["loss"][loss_name]
 
             prev_train_loss = self.agent.logs["train_logs"][list_val[-2]]["loss"][loss_name]
             prev_val_loss = self.agent.logs["val_logs"][list_val[-2]]["loss"][loss_name]
-            print("Train Loss: {} Val Loss: {} Prev Train Loss: {} Prev Val Loss: {}".format(train_loss, val_loss,
-                                                                                             prev_train_loss,
-                                                                                             prev_val_loss))
+            print("Train Loss: {} Val Loss: {} Prev Train Loss: {} Prev Val Loss: {}".format(train_loss, val_loss, prev_train_loss, prev_val_loss))
             overfit = compute_overfit(val_loss, train_loss, prev_val_loss, prev_train_loss)
             gen = val_loss - prev_val_loss
             coef = np.abs(gen) / (overfit * overfit)
@@ -890,18 +892,22 @@ class Bias_Infusion_MLB_Shap(General_Bias_Infusion):
         coef_g, over_g, gen_g = compute_coeff("ce_loss_g")
 
         wandb_output = {
-            "ratio": {"coef_combined": coef_combined,
-                      "coef_c": coef_c,
-                      "coef_g": coef_g,
-                      "over_combined": over_combined,
-                      "over_c": over_c,
-                      "over_g": over_g,
-                      "gen_combined": gen_combined,
-                      "gen_c": gen_c,
-                      "gen_g": gen_g}
+            "ratio": {
+                "coef_combined": coef_combined,
+                "coef_c": coef_c,
+                "coef_g": coef_g,
+                "over_combined": over_combined,
+                "over_c": over_c,
+                "over_g": over_g,
+                "gen_combined": gen_combined,
+                "gen_c": gen_c,
+                "gen_g": gen_g,
+            }
         }
 
         wandb.log(wandb_output)
+
+
 class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MLB_ShapPerm, self).__init__(agent)
@@ -925,7 +931,7 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
     def on_backward_end(self, label, preds):
         def js_divergence(net_1_logits, net_2_logits):
 
-            clip_value = 1e+7
+            clip_value = 1e7
 
             net_1_probs = F.softmax(torch.clamp(net_1_logits, -clip_value, clip_value), dim=1)
             net_2_probs = F.softmax(torch.clamp(net_2_logits, -clip_value, clip_value), dim=1)
@@ -952,7 +958,7 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
                 print("net_2_probs: ", net_2_probs)
 
                 raise Exception("NaN detected in loss computation")
-            return (0.5 * loss)
+            return 0.5 * loss
 
         if len(label.shape) > 1:
             label = label.flatten()
@@ -961,12 +967,9 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         if len(label.shape) > 1:
             label = label.flatten()
 
-        scoreperf_0 = torch.mean(
-            torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
-        scoreperf_1 = torch.mean(
-            torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
+        scoreperf_0 = torch.mean(torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
+        scoreperf_1 = torch.mean(torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
         # score_1 = sum([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))]).detach()
-
 
         # scoreperf_0 = self.criterion(out_color, label.cuda()).detach()
         # scoreperf_1 = self.criterion(out_gray, label.cuda()).detach()
@@ -995,10 +998,8 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         # scoreshap_0 = js_divergence(shap_value_1, F.one_hot(label, num_classes=preds["combined"].size(1)).float()).detach()
 
         # # Compare as per loss using the target
-        scoreperf_shap0 = torch.mean(
-            torch.stack([self.softmax(shap_value_0)[i][label[i]] for i in range(shap_value_0.size(0))])).detach()
-        scoreperf_shap1 = torch.mean(
-            torch.stack([self.softmax(shap_value_1)[i][label[i]] for i in range(shap_value_1.size(0))])).detach()
+        scoreperf_shap0 = torch.mean(torch.stack([self.softmax(shap_value_0)[i][label[i]] for i in range(shap_value_0.size(0))])).detach()
+        scoreperf_shap1 = torch.mean(torch.stack([self.softmax(shap_value_1)[i][label[i]] for i in range(shap_value_1.size(0))])).detach()
 
         # ratioshapperf_0 = scoreperf_shap1 / scoreperf_shap0
         # ratioshapperf_1 = 1 / ratioshapperf_0
@@ -1022,7 +1023,6 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["shap_coeff_audio"].append(coeffshap_0.cpu().numpy())
         self.agent.logs["ratio_logs"]["shap_coeff_video"].append(coeffshap_1.cpu().numpy())
 
-
         # self.agent.logs["ratio_logs"]["shapperf_ratio_audiodivvideo"].append(ratioshapperf_0.cpu().numpy())
         # self.agent.logs["ratio_logs"]["shapperf_coeff_audio"].append(coeffshapperf_0.cpu().numpy())
         # self.agent.logs["ratio_logs"]["shapperf_coeff_video"].append(coeffshapperf_1.cpu().numpy())
@@ -1037,14 +1037,9 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         scoreperm_0 = self.criterion(perm_value_0, label.cuda()).detach()
         scoreperm_1 = self.criterion(perm_value_1, label.cuda()).detach()
 
-
         # Compare as per loss using the target
-        scoreperf_perm0 = torch.mean(
-            torch.stack([self.softmax(perm_value_0)[i][preds["perm_n_label"][i]] for i in
-                         range(perm_value_0.size(0))])).detach()
-        scoreperf_perm1 = torch.mean(
-            torch.stack([self.softmax(perm_value_1)[i][preds["perm_n_label"][i]] for i in
-                         range(perm_value_1.size(0))])).detach()
+        scoreperf_perm0 = torch.mean(torch.stack([self.softmax(perm_value_0)[i][preds["perm_n_label"][i]] for i in range(perm_value_0.size(0))])).detach()
+        scoreperf_perm1 = torch.mean(torch.stack([self.softmax(perm_value_1)[i][preds["perm_n_label"][i]] for i in range(perm_value_1.size(0))])).detach()
 
         # # Compare as per loss using the target
         # scoreperf_perm0 = torch.mean(
@@ -1067,33 +1062,42 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         # # print("Perf-ShapPerf", np.mean((np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]) - np.array(self.agent.logs["ratio_logs"]["shapperf_ratio_audiodivvideo"]))**2))
         # print("Perm-Perf", np.mean((np.array(self.agent.logs["ratio_logs"]["perm_ratio_audiodivvideo"]) - np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]))**2))
 
-        print("Perm-Shap", np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perm_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["shap_ratio_audiodivvideo"]))[0, 1])
-        print("Perf-Shap", np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["shap_ratio_audiodivvideo"]))[0, 1])
-        print("Perm-Perf", np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perm_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]))[0, 1])
+        print(
+            "Perm-Shap",
+            np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perm_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["shap_ratio_audiodivvideo"]))[0, 1],
+        )
+        print(
+            "Perf-Shap",
+            np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["shap_ratio_audiodivvideo"]))[0, 1],
+        )
+        print(
+            "Perm-Perf",
+            np.corrcoef(np.array(self.agent.logs["ratio_logs"]["perm_ratio_audiodivvideo"]), np.array(self.agent.logs["ratio_logs"]["perf_ratio_audiodivvideo"]))[0, 1],
+        )
 
         wandb_output = {
             "ratio": {
-                      "ratioshap_0": ratioshap_0.cpu().numpy(),
-                      "ratioperf_0": ratioperf_0.cpu().numpy(),
-                      "ratioperm_0": ratioperm_0.cpu().numpy(),
-                      # "ratioshapperf_0": ratioshapperf_0.cpu().numpy(),
-                      "scoreperf_0": scoreperf_0.cpu().numpy(),
-                      "scoreperf_1": scoreperf_1.cpu().numpy(),
-                      "scoreperm_0": scoreperm_0.cpu().numpy(),
-                      "scoreperm_1": scoreperm_1.cpu().numpy(),
-                      "scoreshap_0": scoreshap_0.cpu().numpy(),
-                      "scoreshap_1": scoreshap_1.cpu().numpy(),
-                      "scoreshapperf_0": scoreperf_shap0.cpu().numpy(),
-                      "scoreshapperf_1": scoreperf_shap1.cpu().numpy(),
-                      "coeffperf_0": coeffperf_0.cpu().numpy(),
-                      "coeffperf_1": coeffperf_1.cpu().numpy(),
-                      "coeffshap_0": coeffshap_0.cpu().numpy(),
-                      "coeffshap_1": coeffshap_1.cpu().numpy(),
-                      # "coeffshapperf_0": coeffshapperf_0.cpu().numpy(),
-                      # "coeffshapperf_1": coeffshapperf_1.cpu().numpy(),
-                      "coeffperm_0": coeffperm_0.cpu().numpy(),
-                      "coeffperm_1": coeffperm_1.cpu().numpy()
-                      }
+                "ratioshap_0": ratioshap_0.cpu().numpy(),
+                "ratioperf_0": ratioperf_0.cpu().numpy(),
+                "ratioperm_0": ratioperm_0.cpu().numpy(),
+                # "ratioshapperf_0": ratioshapperf_0.cpu().numpy(),
+                "scoreperf_0": scoreperf_0.cpu().numpy(),
+                "scoreperf_1": scoreperf_1.cpu().numpy(),
+                "scoreperm_0": scoreperm_0.cpu().numpy(),
+                "scoreperm_1": scoreperm_1.cpu().numpy(),
+                "scoreshap_0": scoreshap_0.cpu().numpy(),
+                "scoreshap_1": scoreshap_1.cpu().numpy(),
+                "scoreshapperf_0": scoreperf_shap0.cpu().numpy(),
+                "scoreshapperf_1": scoreperf_shap1.cpu().numpy(),
+                "coeffperf_0": coeffperf_0.cpu().numpy(),
+                "coeffperf_1": coeffperf_1.cpu().numpy(),
+                "coeffshap_0": coeffshap_0.cpu().numpy(),
+                "coeffshap_1": coeffshap_1.cpu().numpy(),
+                # "coeffshapperf_0": coeffshapperf_0.cpu().numpy(),
+                # "coeffshapperf_1": coeffshapperf_1.cpu().numpy(),
+                "coeffperm_0": coeffperm_0.cpu().numpy(),
+                "coeffperm_1": coeffperm_1.cpu().numpy(),
+            }
         }
 
         wandb.log(wandb_output)
@@ -1106,13 +1110,14 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         #     self.agent.optimizer.step()
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
@@ -1127,15 +1132,14 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
 
         def compute_coeff(loss_name):
             list_val = list(self.agent.logs["val_logs"].keys())
-            if len(list_val) < 2: return 1, 1, 1
+            if len(list_val) < 2:
+                return 1, 1, 1
             train_loss = self.agent.logs["train_logs"][list_val[-1]]["loss"][loss_name]
             val_loss = self.agent.logs["val_logs"][list_val[-1]]["loss"][loss_name]
 
             prev_train_loss = self.agent.logs["train_logs"][list_val[-2]]["loss"][loss_name]
             prev_val_loss = self.agent.logs["val_logs"][list_val[-2]]["loss"][loss_name]
-            print("Train Loss: {} Val Loss: {} Prev Train Loss: {} Prev Val Loss: {}".format(train_loss, val_loss,
-                                                                                             prev_train_loss,
-                                                                                             prev_val_loss))
+            print("Train Loss: {} Val Loss: {} Prev Train Loss: {} Prev Val Loss: {}".format(train_loss, val_loss, prev_train_loss, prev_val_loss))
             overfit = compute_overfit(val_loss, train_loss, prev_val_loss, prev_train_loss)
             gen = val_loss - prev_val_loss
             coef = np.abs(gen) / (overfit * overfit)
@@ -1146,18 +1150,22 @@ class Bias_Infusion_MLB_ShapPerm(General_Bias_Infusion):
         coef_g, over_g, gen_g = compute_coeff("ce_loss_g")
 
         wandb_output = {
-            "ratio": {"coef_combined": coef_combined,
-                      "coef_c": coef_c,
-                      "coef_g": coef_g,
-                      "over_combined": over_combined,
-                      "over_c": over_c,
-                      "over_g": over_g,
-                      "gen_combined": gen_combined,
-                      "gen_c": gen_c,
-                      "gen_g": gen_g}
+            "ratio": {
+                "coef_combined": coef_combined,
+                "coef_c": coef_c,
+                "coef_g": coef_g,
+                "over_combined": over_combined,
+                "over_c": over_c,
+                "over_g": over_g,
+                "gen_combined": gen_combined,
+                "gen_c": gen_c,
+                "gen_g": gen_g,
+            }
         }
 
         wandb.log(wandb_output)
+
+
 class Bias_Infusion_MLB_3d(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MLB_3d, self).__init__(agent)
@@ -1168,14 +1176,7 @@ class Bias_Infusion_MLB_3d(General_Bias_Infusion):
         self.criterion = nn.CrossEntropyLoss()
         self.softmax = nn.Softmax(dim=1)
         self.tanh = nn.Tanh()
-        self.agent.logs["ratio_logs"] = {
-            "ratio_0": [],
-            "ratio_1": [],
-            "ratio_2": [],
-            "coeff_v": [],
-            "coeff_l": [],
-            "coeff_f": []
-        }
+        self.agent.logs["ratio_logs"] = {"ratio_0": [], "ratio_1": [], "ratio_2": [], "coeff_v": [], "coeff_l": [], "coeff_f": []}
         self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", False)
         # self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", "whatev")
         self.alpha = self.agent.config.model.args.bias_infusion.alpha
@@ -1198,10 +1199,8 @@ class Bias_Infusion_MLB_3d(General_Bias_Infusion):
 
     def on_backward_end(self, label, out_color, out_gray, out_f):
 
-        score_0 = torch.mean(
-            torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
-        score_1 = torch.mean(
-            torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
+        score_0 = torch.mean(torch.stack([self.softmax(out_color)[i][label[i]] for i in range(out_color.size(0))])).detach()
+        score_1 = torch.mean(torch.stack([self.softmax(out_gray)[i][label[i]] for i in range(out_gray.size(0))])).detach()
         score_2 = torch.mean(torch.stack([self.softmax(out_f)[i][label[i]] for i in range(out_f.size(0))])).detach()
 
         ratio_0 = ((score_1 + score_2) / 2) / score_0
@@ -1234,32 +1233,37 @@ class Bias_Infusion_MLB_3d(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_f"].append(coeff_2)
 
         wandb_output = {
-            "ratio": {"ratio_0": ratio_0.cpu().numpy(),
-                      "ratio_1": ratio_1.cpu().numpy(),
-                      "ratio_2": ratio_2.cpu().numpy(),
-                      "coeff_v": coeff_0,
-                      "coeff_l": coeff_1,
-                      "coeff_f": coeff_2
-                      }}
+            "ratio": {
+                "ratio_0": ratio_0.cpu().numpy(),
+                "ratio_1": ratio_1.cpu().numpy(),
+                "ratio_2": ratio_2.cpu().numpy(),
+                "coeff_v": coeff_0,
+                "coeff_l": coeff_1,
+                "coeff_f": coeff_2,
+            }
+        }
 
         wandb.log(wandb_output, step=self.agent.logs["current_step"])
 
         self._equalize_gradients(coeff_0=coeff_0, coeff_1=coeff_1, coeff_2=coeff_2)
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1, coeff_2=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
                     parms.grad *= coeff_1
                 if "mod2" in name or "enc_2" in name or "fc_2_lin.weight" in name:
                     parms.grad *= coeff_2
+
+
 class Bias_Infusion_MLB_Reg(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MLB_Reg, self).__init__(agent)
@@ -1269,14 +1273,7 @@ class Bias_Infusion_MLB_Reg(General_Bias_Infusion):
     def _initialize_logs_n_utils(self):
         self.criterion = nn.CrossEntropyLoss()
         self.tanh = nn.Tanh()
-        self.agent.logs["ratio_logs"] = {
-            "ratio_0": [],
-            "ratio_1": [],
-            "ratio_2": [],
-            "coeff_v": [],
-            "coeff_l": [],
-            "coeff_f": []
-        }
+        self.agent.logs["ratio_logs"] = {"ratio_0": [], "ratio_1": [], "ratio_2": [], "coeff_v": [], "coeff_l": [], "coeff_f": []}
         self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", False)
         # self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", "whatev")
         self.alpha = self.agent.config.model.args.bias_infusion.alpha
@@ -1313,28 +1310,33 @@ class Bias_Infusion_MLB_Reg(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_l"].append(coeff_1)
 
         wandb_output = {
-            "ratio": {"ratio_0": ratio_0.cpu().numpy(),
-                      "ratio_1": ratio_1.cpu().numpy(),
-                      "coeff_v": coeff_0,
-                      "coeff_l": coeff_1,
-                      }}
+            "ratio": {
+                "ratio_0": ratio_0.cpu().numpy(),
+                "ratio_1": ratio_1.cpu().numpy(),
+                "coeff_v": coeff_0,
+                "coeff_l": coeff_1,
+            }
+        }
 
         wandb.log(wandb_output, step=self.agent.logs["current_step"])
 
         self._equalize_gradients(coeff_0=coeff_0, coeff_1=coeff_1)
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
                     parms.grad *= coeff_1
+
+
 class Bias_Infusion_MLB_3d_Reg(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_MLB_3d_Reg, self).__init__(agent)
@@ -1344,14 +1346,7 @@ class Bias_Infusion_MLB_3d_Reg(General_Bias_Infusion):
     def _initialize_logs_n_utils(self):
         self.criterion = nn.CrossEntropyLoss()
         self.tanh = nn.Tanh()
-        self.agent.logs["ratio_logs"] = {
-            "ratio_0": [],
-            "ratio_1": [],
-            "ratio_2": [],
-            "coeff_v": [],
-            "coeff_l": [],
-            "coeff_f": []
-        }
+        self.agent.logs["ratio_logs"] = {"ratio_0": [], "ratio_1": [], "ratio_2": [], "coeff_v": [], "coeff_l": [], "coeff_f": []}
         self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", False)
         # self.balance_mode = self.agent.config.model.args.bias_infusion.get("balance_mode", "whatev")
         self.alpha = self.agent.config.model.args.bias_infusion.alpha
@@ -1408,32 +1403,36 @@ class Bias_Infusion_MLB_3d_Reg(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_f"].append(coeff_2)
 
         wandb_output = {
-            "ratio": {"ratio_0": ratio_0.cpu().numpy(),
-                      "ratio_1": ratio_1.cpu().numpy(),
-                      "ratio_2": ratio_2.cpu().numpy(),
-                      "coeff_v": coeff_0,
-                      "coeff_l": coeff_1,
-                      "coeff_f": coeff_2
-                      }}
+            "ratio": {
+                "ratio_0": ratio_0.cpu().numpy(),
+                "ratio_1": ratio_1.cpu().numpy(),
+                "ratio_2": ratio_2.cpu().numpy(),
+                "coeff_v": coeff_0,
+                "coeff_l": coeff_1,
+                "coeff_f": coeff_2,
+            }
+        }
 
         wandb.log(wandb_output, step=self.agent.logs["current_step"])
 
         self._equalize_gradients(coeff_0=coeff_0, coeff_1=coeff_1, coeff_2=coeff_2)
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1, coeff_2=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
 
-        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs[
-            "current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
+        if self.agent.config.model.args.bias_infusion.starting_epoch <= self.agent.logs["current_epoch"] <= self.agent.config.model.args.bias_infusion.ending_epoch:
 
             for name, parms in self.agent.model.named_parameters():
-                if parms.grad is None: continue
+                if parms.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name or "fc_0_lin.weight" in name:
                     parms.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name or "fc_1_lin.weight" in name:
                     parms.grad *= coeff_1
                 if "mod2" in name or "enc_2" in name or "fc_2_lin.weight" in name:
                     parms.grad *= coeff_2
+
 
 class Bias_Infusion_MSLR(General_Bias_Infusion):
     def __init__(self, agent):
@@ -1462,14 +1461,15 @@ class Bias_Infusion_MSLR(General_Bias_Infusion):
 
     def on_epoch_begin(self, **kwargs):
 
-        if self.agent.logs["current_epoch"] < 1: return
+        if self.agent.logs["current_epoch"] < 1:
+            return
 
         acc_0 = self.agent.logs["val_logs"][list(self.agent.logs["val_logs"].keys())[-1]]["acc"]["c"]
         acc_1 = self.agent.logs["val_logs"][list(self.agent.logs["val_logs"].keys())[-1]]["acc"]["g"]
 
         if self.agent.logs["current_epoch"] > self.keep_memory_epoch:
-            ratio_0 = acc_0 / np.array(self.coeff_memory[0][-self.keep_memory_epoch:]).mean()
-            ratio_1 = acc_1 / np.array(self.coeff_memory[1][-self.keep_memory_epoch:]).mean()
+            ratio_0 = acc_0 / np.array(self.coeff_memory[0][-self.keep_memory_epoch :]).mean()
+            ratio_1 = acc_1 / np.array(self.coeff_memory[1][-self.keep_memory_epoch :]).mean()
         else:
             ratio_0, ratio_1 = 1, 1
 
@@ -1492,14 +1492,17 @@ class Bias_Infusion_MSLR(General_Bias_Infusion):
         wandb.log({"ratio": self.agent.logs["ratio_logs"]})
 
     def _equalize_gradients(self, coeff_0=1, coeff_1=1):
-        if not self.agent.config.model.args.bias_infusion.use: return
+        if not self.agent.config.model.args.bias_infusion.use:
+            return
         if self.starting_epoch <= self.agent.logs["current_epoch"] <= self.ending_epoch:
             for name, params in self.agent.model.named_parameters():
-                if params.grad is None: continue
+                if params.grad is None:
+                    continue
                 if "mod0" in name or "enc_0" in name:
                     params.grad *= coeff_0
                 if "mod1" in name or "enc_1" in name:
                     params.grad *= coeff_1
+
 
 class Bias_Infusion_AGM(General_Bias_Infusion):
     def __init__(self, agent):
@@ -1556,17 +1559,17 @@ class Bias_Infusion_AGM(General_Bias_Infusion):
 
         if len(label.shape) > 1:
             label = label.flatten()
-        score_audio = 0.
-        score_visual = 0.
+        score_audio = 0.0
+        score_visual = 0.0
         for k in range(out_color.size(0)):
             if torch.isinf(self.softmax(out_color)[k][label[k]]) or self.softmax(out_color)[k][label[k]] < 1e-8:
-                score_audio += - torch.log(torch.tensor(1e-8, dtype=out_color.dtype, device=out_color.device))
+                score_audio += -torch.log(torch.tensor(1e-8, dtype=out_color.dtype, device=out_color.device))
             else:
-                score_audio += - torch.log(self.softmax(out_color)[k][label[k]])
+                score_audio += -torch.log(self.softmax(out_color)[k][label[k]])
             if torch.isinf(self.softmax(out_gray)[k][label[k]]) or self.softmax(out_gray)[k][label[k]] < 1e-8:
-                score_visual += - torch.log(torch.tensor(1e-8, dtype=out_gray.dtype, device=out_gray.device))
+                score_visual += -torch.log(torch.tensor(1e-8, dtype=out_gray.dtype, device=out_gray.device))
             else:
-                score_visual += - torch.log(self.softmax(out_gray)[k][label[k]])
+                score_visual += -torch.log(self.softmax(out_gray)[k][label[k]])
 
         score_audio = score_audio / out_color.size(0)
         score_visual = score_visual / out_gray.size(0)
@@ -1596,11 +1599,14 @@ class Bias_Infusion_AGM(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_gray"].append(coeff_v)
 
         wandb_output = {
-            "ratio": {"ratio_gray": self.train_score_a,
-                      "ratio_color": self.train_score_v,
-                      "ratio_gray_ra": self.ra_score_a,
-                      "ratio_color_ra": self.ra_score_v,
-                      "coeff_color": coeff_a, "coeff_gray": coeff_v}
+            "ratio": {
+                "ratio_gray": self.train_score_a,
+                "ratio_color": self.train_score_v,
+                "ratio_gray_ra": self.ra_score_a,
+                "ratio_color_ra": self.ra_score_v,
+                "coeff_color": coeff_a,
+                "coeff_gray": coeff_v,
+            }
         }
 
         wandb.log(wandb_output, step=self.agent.logs["current_step"])
@@ -1608,6 +1614,8 @@ class Bias_Infusion_AGM(General_Bias_Infusion):
         self.agent.model.update_scale(coeff_a, coeff_v)
 
         return total, output_losses, False
+
+
 class Bias_Infusion_AGM_reg(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_AGM_reg, self).__init__(agent)
@@ -1669,11 +1677,14 @@ class Bias_Infusion_AGM_reg(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_gray"].append(coeff_v)
 
         wandb_output = {
-            "ratio": {"ratio_gray": self.train_score_a,
-                      "ratio_color": self.train_score_v,
-                      "ratio_gray_ra": self.ra_score_a,
-                      "ratio_color_ra": self.ra_score_v,
-                      "coeff_color": coeff_a, "coeff_gray": coeff_v}
+            "ratio": {
+                "ratio_gray": self.train_score_a,
+                "ratio_color": self.train_score_v,
+                "ratio_gray_ra": self.ra_score_a,
+                "ratio_color_ra": self.ra_score_v,
+                "coeff_color": coeff_a,
+                "coeff_gray": coeff_v,
+            }
         }
 
         wandb.log(wandb_output, step=self.agent.logs["current_step"])
@@ -1681,6 +1692,8 @@ class Bias_Infusion_AGM_reg(General_Bias_Infusion):
         self.agent.model.update_scale(coeff_a, coeff_v)
 
         return total, output_losses, False
+
+
 class Bias_Infusion_AGM_3mod(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_AGM_3mod, self).__init__(agent)
@@ -1709,24 +1722,24 @@ class Bias_Infusion_AGM_3mod(General_Bias_Infusion):
         out_gray = output["preds"]["g"]
         out_flow = output["preds"]["f"]
 
-        score_visual = 0.
-        score_audio = 0.
-        score_flow = 0.
+        score_visual = 0.0
+        score_audio = 0.0
+        score_flow = 0.0
 
         for k in range(out_color.size(0)):
             if torch.isinf(self.softmax(out_color)[k][label[k]]) or self.softmax(out_color)[k][label[k]] < 1e-8:
-                score_audio += - torch.log(torch.tensor(1e-8, dtype=out_color.dtype, device=out_color.device))
+                score_audio += -torch.log(torch.tensor(1e-8, dtype=out_color.dtype, device=out_color.device))
             else:
-                score_audio += - torch.log(self.softmax(out_color)[k][label[k]])
+                score_audio += -torch.log(self.softmax(out_color)[k][label[k]])
             if torch.isinf(self.softmax(out_gray)[k][label[k]]) or self.softmax(out_gray)[k][label[k]] < 1e-8:
-                score_visual += - torch.log(torch.tensor(1e-8, dtype=out_gray.dtype, device=out_gray.device))
+                score_visual += -torch.log(torch.tensor(1e-8, dtype=out_gray.dtype, device=out_gray.device))
             else:
-                score_visual += - torch.log(self.softmax(out_gray)[k][label[k]])
+                score_visual += -torch.log(self.softmax(out_gray)[k][label[k]])
 
             if torch.isinf(self.softmax(out_flow)[k][label[k]]) or self.softmax(out_flow)[k][label[k]] < 1e-8:
-                score_flow += - torch.log(torch.tensor(1e-8, dtype=out_flow.dtype, device=out_gray.device))
+                score_flow += -torch.log(torch.tensor(1e-8, dtype=out_flow.dtype, device=out_gray.device))
             else:
-                score_flow += - torch.log(self.softmax(out_flow)[k][label[k]])
+                score_flow += -torch.log(self.softmax(out_flow)[k][label[k]])
 
         score_audio = score_audio / out_color.size(0)
         score_visual = score_visual / out_gray.size(0)
@@ -1761,17 +1774,23 @@ class Bias_Infusion_AGM_3mod(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_gray"].append(coeff_v)
         self.agent.logs["ratio_logs"]["coeff_flow"].append(coeff_f)
 
-        wandb.log({"coeff_v": coeff_a,
-                   "coeff_l": coeff_v,
-                   "coeff_f": coeff_f,
-                   "running_ratio_v": self.train_score_a,
-                   "running_ratio_l": self.train_score_v,
-                   "running_ratio_f": self.train_score_f
-                   }, step=self.agent.logs["current_step"])
+        wandb.log(
+            {
+                "coeff_v": coeff_a,
+                "coeff_l": coeff_v,
+                "coeff_f": coeff_f,
+                "running_ratio_v": self.train_score_a,
+                "running_ratio_l": self.train_score_v,
+                "running_ratio_f": self.train_score_f,
+            },
+            step=self.agent.logs["current_step"],
+        )
 
         self.agent.model.update_scale(coeff_c=coeff_a, coeff_g=coeff_v, coeff_f=coeff_f)
 
         return total, output_losses, False
+
+
 class Bias_Infusion_AGM_3mod_reg(General_Bias_Infusion):
     def __init__(self, agent):
         super(Bias_Infusion_AGM_3mod_reg, self).__init__(agent)
@@ -1839,17 +1858,18 @@ class Bias_Infusion_AGM_3mod_reg(General_Bias_Infusion):
         self.agent.logs["ratio_logs"]["coeff_gray"].append(coeff_v)
         self.agent.logs["ratio_logs"]["coeff_flow"].append(coeff_f)
 
-        wandb.log({"coeff_v": coeff_a,
-                   "coeff_l": coeff_v,
-                   "coeff_f": coeff_f,
-                   "running_ratio_v": self.train_score_a,
-                   "running_ratio_l": self.train_score_v,
-                   "running_ratio_f": self.train_score_f
-                   }, step=self.agent.logs["current_step"])
+        wandb.log(
+            {
+                "coeff_v": coeff_a,
+                "coeff_l": coeff_v,
+                "coeff_f": coeff_f,
+                "running_ratio_v": self.train_score_a,
+                "running_ratio_l": self.train_score_v,
+                "running_ratio_f": self.train_score_f,
+            },
+            step=self.agent.logs["current_step"],
+        )
 
         self.agent.model.update_scale(coeff_c=coeff_a, coeff_g=coeff_v, coeff_f=coeff_f)
 
         return total, output_losses, False
-
-
-

@@ -46,8 +46,8 @@ class videoReader(object):
             if count % self.fps == 0:
                 frame_id = 0
             if frame_id < frame_interval * self.frame_kept_per_second and frame_id % frame_interval == 0:
-                save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, count)
-                cv2.imencode('.jpg', image)[1].tofile(save_name)
+                save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, count)
+                cv2.imencode(".jpg", image)[1].tofile(save_name)
                 save_count += 1
 
             frame_id += 1
@@ -59,48 +59,46 @@ class videoReader(object):
             if self.video_frames < min_save_frame:
                 while count < add_count:
                     frame_id = np.random.randint(0, min_save_frame)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, 0)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
             else:
                 while count < add_count:
                     frame_id = np.random.randint(0, self.video_frames)
-                    save_name = '{0}/{1:05d}.jpg'.format(self.frame_save_path, frame_id)
+                    save_name = "{0}/{1:05d}.jpg".format(self.frame_save_path, frame_id)
                     if not os.path.exists(save_name):
                         self.vid.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
                         ret, image = self.vid.read()
-                        cv2.imencode('.jpg', image)[1].tofile(save_name)
+                        cv2.imencode(".jpg", image)[1].tofile(save_name)
                         count += 1
 
 
-
 class CRAMED_dataset(object):
-    def __init__(self, path_to_dataset="/esat/smcdata/users/kkontras/Image_Dataset/no_backup/CremaD/CREMA-D", frame_interval=1, frame_kept_per_second=1):
-        self.path_to_video = os.path.join(path_to_dataset, 'VideoFlash')
-        self.path_to_audio = os.path.join(path_to_dataset, 'AudioWAV')
+    def __init__(self, path_to_dataset="project_default_dir/CremaD/CREMA-D", frame_interval=1, frame_kept_per_second=1):
+        self.path_to_video = os.path.join(path_to_dataset, "VideoFlash")
+        self.path_to_audio = os.path.join(path_to_dataset, "AudioWAV")
         self.frame_kept_per_second = frame_kept_per_second
         self.sr = 16000
 
-        self.path_to_save = os.path.join(path_to_dataset, 'Image-{:02d}-FPS'.format(self.frame_kept_per_second))
+        self.path_to_save = os.path.join(path_to_dataset, "Image-{:02d}-FPS".format(self.frame_kept_per_second))
         if not os.path.exists(self.path_to_save):
             os.mkdir(self.path_to_save)
 
-        self.path_to_save_audio = os.path.join(path_to_dataset, 'Audio-{:d}'.format(1004))
+        self.path_to_save_audio = os.path.join(path_to_dataset, "Audio-{:d}".format(1004))
         if not os.path.exists(self.path_to_save_audio):
             os.mkdir(self.path_to_save_audio)
 
-
-        csv_file = pd.read_csv(os.path.join(path_to_dataset, 'processedResults/summaryTable.csv'))
-        self.file_list = list(csv_file['FileName'])
+        csv_file = pd.read_csv(os.path.join(path_to_dataset, "processedResults/summaryTable.csv"))
+        self.file_list = list(csv_file["FileName"])
 
     def extractImage(self):
 
         for each_video in self.file_list:
-            print('Precessing {} ...'.format(each_video))
-            video_dir = os.path.join(self.path_to_video, each_video + '.flv')
+            print("Precessing {} ...".format(each_video))
+            video_dir = os.path.join(self.path_to_video, each_video + ".flv")
             self.videoReader = videoReader(video_path=video_dir, frame_kept_per_second=self.frame_kept_per_second)
 
             save_dir = os.path.join(self.path_to_save, each_video)
@@ -110,13 +108,13 @@ class CRAMED_dataset(object):
 
     def extractWav(self):
         for each_audio in self.file_list:
-            print('Precessing {} ...'.format(each_audio))
-            audio_dir = os.path.join(self.path_to_audio, each_audio + '.wav')
+            print("Precessing {} ...".format(each_audio))
+            audio_dir = os.path.join(self.path_to_audio, each_audio + ".wav")
 
             samples, rate = librosa.load(audio_dir, sr=self.sr)
-            resamples = np.tile(samples, 10)[:self.sr * 10]
-            resamples[resamples > 1.] = 1.
-            resamples[resamples < -1.] = -1.
+            resamples = np.tile(samples, 10)[: self.sr * 10]
+            resamples[resamples > 1.0] = 1.0
+            resamples[resamples < -1.0] = -1.0
 
             # spectrogram = librosa.stft(resamples, n_fft=512, hop_length=353)
             frequencies, times, spectrogram = signal.spectrogram(resamples, rate, nperseg=512, noverlap=353)
@@ -125,8 +123,8 @@ class CRAMED_dataset(object):
             # std = np.std(spectrogram)
             # spectrogram = np.divide(spectrogram - mean, std + 1e-9)
             # print(spectrogram.shape)
-            save_name = os.path.join(self.path_to_save_audio, each_audio + '.pkl')
-            with open(save_name, 'wb') as fid:
+            save_name = os.path.join(self.path_to_save_audio, each_audio + ".pkl")
+            with open(save_name, "wb") as fid:
                 pickle.dump(spectrogram, fid)
 
 
@@ -154,14 +152,14 @@ class CRAMED_dataset(object):
 #
 # # Example usage:
 # num_splits = 10
-# all_names = np.unique(np.array([ i.split("_")[0] for i in os.listdir("/esat/smcdata/users/kkontras/Image_Dataset/no_backup/CremaD/CREMA-D/AudioWAV") ]))
+# all_names = np.unique(np.array([ i.split("_")[0] for i in os.listdir("project_default_dir/CremaD/CREMA-D/AudioWAV") ]))
 # folds = random_split_list(all_names, num_splits)
 # print(folds.keys())
 # for f in folds:
 #     for set in folds[f]:
 #         this_set_list = []
 #         for name in folds[f][set]:
-#             for i in os.listdir("/esat/smcdata/users/kkontras/Image_Dataset/no_backup/CremaD/CREMA-D/VideoFlash"):
+#             for i in os.listdir("project_default_dir/CremaD/CREMA-D/VideoFlash"):
 #                 if name in i: this_set_list.append(i)
 #         folds[f][set] = this_set_list
 #
@@ -173,4 +171,3 @@ class CRAMED_dataset(object):
 #
 # with open('./datasets/CREMAD/data_splits_persubj.pkl', "w") as json_file:
 #     json.dump(folds, json_file)
-

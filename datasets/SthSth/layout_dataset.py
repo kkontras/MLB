@@ -9,17 +9,14 @@ from datasets.SthSth.dataset_proto import ProtoDataset
 from datasets.SthSth.utils_data import fix_box
 from datasets.SthSth.sampler import get_sampler
 
+
 class LayoutDataset(ProtoDataset):
     def __init__(self, cfg: CfgNode, train: bool = False):
         self.cfg = cfg
 
         self.train = train
-        self.dataset_name = (
-            cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
-        )
-        self.dataset_path = (
-            cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
-        )
+        self.dataset_name = cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
+        self.dataset_path = cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
         self.create_dataset()
         self.cat2index = {"pad": 0, "object": 1, "hand": 2}
         self.max_objects = 14
@@ -30,9 +27,7 @@ class LayoutDataset(ProtoDataset):
 
     def open_resource(self):
         assert self.cfg.DETECTIONS_PATH, "Path to detections must be provided!"
-        self.resource = h5py.File(
-            self.cfg.DETECTIONS_PATH, "r", libver="latest", swmr=True
-        )
+        self.resource = h5py.File(self.cfg.DETECTIONS_PATH, "r", libver="latest", swmr=True)
 
     def get_detections(self, dataset_element, index: int, **kwargs):
         boxes, class_labels, scores, states, sides = [], [], [], [], []
@@ -42,9 +37,7 @@ class LayoutDataset(ProtoDataset):
             else:
                 resource = self.resource
             video_name = dataset_element["id"]
-            detections = ast.literal_eval(
-                str(np.array(resource[video_name][str(index)]))[2:-1]
-            )
+            detections = ast.literal_eval(str(np.array(resource[video_name][str(index)]))[2:-1])
             for e in detections:
                 boxes.append(e["box"])
                 class_labels.append(self.cat2index[e["category"]])
@@ -59,11 +52,7 @@ class LayoutDataset(ProtoDataset):
             for e in frame_objects:
                 box = fix_box([e["x1"], e["y1"], e["x2"], e["y2"]], video_size=(h, w))
                 boxes.append(box)
-                class_label = (
-                    self.cat2index["hand"]
-                    if "hand" in e["category"]
-                    else self.cat2index["object"]
-                )
+                class_label = self.cat2index["hand"] if "hand" in e["category"] else self.cat2index["object"]
                 class_labels.append(class_label)
                 scores.append(e["score"])
             sides = [0 for _ in range(len(class_labels))]
@@ -88,18 +77,14 @@ class LayoutDataset(ProtoDataset):
             "src_key_padding_mask_boxes": [],
         }
         if not hasattr(self, "indices"):
-            indices = self.sampler(
-                video_length=self.get_video_length(self.dataset[idx])
-            )
+            indices = self.sampler(video_length=self.get_video_length(self.dataset[idx]))
         else:
             indices = self.indices
         output["indices"] = indices
         output["start_frame"] = 0
 
         for index in indices:
-            bboxes, class_labels, scores, sides, states = self.get_detections(
-                self.dataset[idx], index
-            )
+            bboxes, class_labels, scores, sides, states = self.get_detections(self.dataset[idx], index)
             # Perform padding to max objects
             while len(bboxes) < self.max_objects:
                 class_labels.append(self.cat2index["pad"])
@@ -122,16 +107,9 @@ class LayoutDataset(ProtoDataset):
             # Add states
             output["states"].append(torch.tensor(states))
             # Generate mask
-            output["src_key_padding_mask_boxes"].append(
-                output["class_labels"][-1] == self.cat2index["pad"]
-            )
+            output["src_key_padding_mask_boxes"].append(output["class_labels"][-1] == self.cat2index["pad"])
         # Convert to tensors
-        output = {
-            key: torch.stack(val, dim=0)
-            if key not in ["indices", "start_frame"]
-            else val
-            for key, val in output.items()
-        }
+        output = {key: torch.stack(val, dim=0) if key not in ["indices", "start_frame"] else val for key, val in output.items()}
         output["labels"] = self.get_actions(self.dataset[idx])
 
         return output

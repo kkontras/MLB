@@ -7,10 +7,11 @@ from tqdm import tqdm
 import numpy as np
 from multiprocessing import Pool
 
+
 class Wav2VecExtractor:
     def __init__(self):
         self.preprocessor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-base-960h")
-        self.model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base-960h").to('cuda')
+        self.model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base-960h").to("cuda")
         self.model.eval()
 
     def extract_all(self, raw_wav_list):
@@ -36,21 +37,24 @@ class WavExtractor:
     def __init__(self, *args, **kwargs):
         self.wav_path_list = kwargs.get("wav_paths", args[0])
         self.nj = kwargs.get("nj", 24)
+
     def extract(self):
         print("Extracting wav files")
         with Pool(self.nj) as p:
             wav_list = list(tqdm(p.imap(extract_wav, self.wav_path_list), total=len(self.wav_path_list)))
         return wav_list
 
+
 class VidExtractor:
     def __init__(self, *args, **kwargs):
         self.vid_path_list = kwargs.get("wav_paths", args[0])
         self.nj = kwargs.get("nj", 24)
+
     def extract(self):
         print("Extracting video files")
         vid_list = []
         for vid_loc in tqdm(self.vid_path_list):
-            feats = np.load(vid_loc + '.npy') #np.transpose(np.load(vid_loc + '.npy')) 
+            feats = np.load(vid_loc + ".npy")  # np.transpose(np.load(vid_loc + '.npy'))
 
             # frames = os.listdir(vid_loc)
             # feats = []
@@ -60,15 +64,15 @@ class VidExtractor:
             vid_list.append(np.array(feats))
         return vid_list
 
+
 def unpack_torch_segment(padded_segment, duration):
     batch_num = padded_segment.size(0)
     result = []
     for idx in range(batch_num):
         cur_segment = padded_segment[idx]
-        
+
         cur_dur = duration[idx]
         cut_seg = cur_segment[:cur_dur]
         result.append(cut_seg)
     resutl = torch.Tensor(result)
     return result
-

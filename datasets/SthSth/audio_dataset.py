@@ -19,13 +19,9 @@ class AudioDataset(ProtoDataset):
         self.cfg = cfg
         self.train = train
         self.dataset_type = "audio"
-        self.dataset_name = ( cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME)
-        assert (
-            self.dataset_name == "EPIC-KITCHENS"
-        ), "Audio only defined for 'EPIC-KITCHENS'!"
-        self.dataset_path = (
-            cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
-        )
+        self.dataset_name = cfg.TRAIN_DATASET_NAME if self.train else cfg.VAL_DATASET_NAME
+        assert self.dataset_name == "EPIC-KITCHENS", "Audio only defined for 'EPIC-KITCHENS'!"
+        self.dataset_path = cfg.TRAIN_DATASET_PATH if self.train else cfg.VAL_DATASET_PATH
         self.create_dataset()
         # Define transform
         self.spectrogram = T.MelSpectrogram(
@@ -68,17 +64,10 @@ class AudioDataset(ProtoDataset):
             resource = self.resource
 
         audio_sample_rate = self.cfg.AUDIO_SAMPLE_RATE
-        frame_offset = int(
-            self.get_timestamp_seconds(start_timestamp) * audio_sample_rate
-        )
-        num_frames = int(
-            self.get_difference_seconds(start_timestamp, stop_timestamp)
-            * audio_sample_rate
-        )
+        frame_offset = int(self.get_timestamp_seconds(start_timestamp) * audio_sample_rate)
+        num_frames = int(self.get_difference_seconds(start_timestamp, stop_timestamp) * audio_sample_rate)
         # Extract audio
-        audio = torch.tensor(
-            resource[video_id][frame_offset : frame_offset + num_frames]
-        ).unsqueeze(0)
+        audio = torch.tensor(resource[video_id][frame_offset : frame_offset + num_frames]).unsqueeze(0)
         if self.cfg.AUDIO_RESAMPLE_RATE:
             audio = F.resample(audio, audio_sample_rate, self.cfg.AUDIO_RESAMPLE_RATE)
             audio_sample_rate = self.cfg.AUDIO_RESAMPLE_RATE
@@ -95,9 +84,7 @@ class AudioDataset(ProtoDataset):
             segment_length=segment_length,
             audio_indices=audio_indices,
         )
-        spectrogram = self.spectrogram(
-            audio_segments
-        )  # [Eval_Clips x Frames, Height (Freqs), Width (Timesteps)]
+        spectrogram = self.spectrogram(audio_segments)  # [Eval_Clips x Frames, Height (Freqs), Width (Timesteps)]
         return spectrogram
 
     def __getitem__(self, idx: int):
@@ -106,16 +93,11 @@ class AudioDataset(ProtoDataset):
             self.open_resource()
         output["id"] = self.dataset[idx]["id"]
         if not hasattr(self, "indices"):
-            indices = self.sampler(
-                video_length=self.get_video_length(self.dataset[idx])
-            )
+            indices = self.sampler(video_length=self.get_video_length(self.dataset[idx]))
         else:
             indices = self.indices
         output["indices"] = indices
-        output["start_frame"] = int(
-            self.get_timestamp_seconds(self.dataset[idx]["start_timestamp"])
-            * self.cfg.VIDEO_FPS
-        )
+        output["start_frame"] = int(self.get_timestamp_seconds(self.dataset[idx]["start_timestamp"]) * self.cfg.VIDEO_FPS)
         # Check for existing transforms
         if not hasattr(self, "existing_transforms"):
             existing_transforms = {}

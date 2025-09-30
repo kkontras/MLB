@@ -43,22 +43,13 @@ class SwinModel(nn.Module):
                     name = k[9:]
                     new_state_dict[name] = v
             self.backbone.load_state_dict(new_state_dict)
-        # Build classifier
-        # actions = {"action": self.cfg.num_classes}
-        # self.classifiers = nn.ModuleDict(
-        #     {
-        #         actions_name: nn.Linear(768, actions_num)
-        #         for actions_name, actions_num in actions.items()
-        #         if actions_num is not None
-        #     }
-        # )
+
 
         self.classifiers = nn.ModuleDict(
             {"ACTION": nn.Linear(768, self.args.num_classes)}
         )
         self.modality = self.get_modality()
 
-        # Load existing checkpoint, if any
         if checkpoint:
             logging.info(f"Loading model checkpoint from {checkpoint}")
             ch = torch.load(checkpoint, map_location="cpu")
@@ -114,7 +105,6 @@ class SwinModel(nn.Module):
         if return_features:
             output["features"] = {"combined": features}
 
-            # return output, features
         return output
 
 class All3Model(nn.Module):
@@ -1438,8 +1428,6 @@ class Video_Layout_Model_Ens(nn.Module):
         super(Video_Layout_Model_Ens, self).__init__()
         self.cfg = copy.deepcopy(cfg)
 
-        # self.cfg.TRAIN_DATASET_PATH = "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/Sth-Sth/something_something_detections/kkontras_flow_train.json"
-        # self.cfg.VAL_DATASET_PATH = "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/Sth-Sth/something_something_detections/kkontras_flow_val.json"
         cfg_video = copy.deepcopy(cfg)
         cfg_video.defrost()
         cfg_video.CHECKPOINT_PATH =  cfg.VIDEO_PRETRAINED_PATH if "VIDEO_PRETRAINED_PATH" in cfg else None
@@ -1452,12 +1440,6 @@ class Video_Layout_Model_Ens(nn.Module):
         cfg_layout.CHECKPOINT_PATH = cfg.LAYOUT_PRETRAINED_PATH if "LAYOUT_PRETRAINED_PATH" in cfg else None
         cfg_layout.freeze()
         self.layout_model = Stlt(cfg=cfg_layout)
-
-
-        # if cfg.CHECKPOINT_PATH:
-        #     print("We are loading from {}".format(cfg.CHECKPOINT_PATH))
-        #     self.load_state_dict(torch.load(cfg.CHECKPOINT_PATH, map_location="cpu"))
-
 
     def forward(self, batch: Dict[str, torch.Tensor], return_features: bool = False):
 
