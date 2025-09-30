@@ -1,9 +1,16 @@
+
+<div align="center">
+
 # Multi-Loss Balanced (MLB)
 
-> This repository contains the official implementation for the following papers:
-> - #### Improving Multimodal Learning with Multi-Loss Gradient Modulation (BMVC 2024)
-> - #### Self-Balancing Multimodal Models via Multi-Loss Gradient Modulation (IJCV 2025)
+Official implementation of the papers 
 
+- #### Improving Multimodal Learning with Multi-Loss Gradient Modulation (BMVC 2024)
+- #### Self-Balancing Multimodal Models via Multi-Loss Gradient Modulation (IJCV 2025)
+
+</div>
+
+---
 
 [![IJCV](https://img.shields.io/badge/IJCV-Journal-blue)](https://www.springer.com/journal/)
 [![BMVC 2024](https://img.shields.io/badge/BMVC-2024-orange)](https://bmvc2024.org/proceedings/977/)
