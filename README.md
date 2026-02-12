@@ -6,7 +6,7 @@
 Official implementation of the papers 
 
 #### ◉ Improving Multimodal Learning with Multi-Loss Gradient Modulation (BMVC 2024)
-#### ◉ Self-Balancing Multimodal Models via Multi-Loss Gradient Modulation (IJCV 2025)
+#### ◉ Self-Balancing Multimodal Models via Multi-Loss Gradient Modulation (IJCV 2026)
 
 </div>
 
